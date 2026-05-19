@@ -891,11 +891,12 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
                 const data = await res.json();
                 if (!res.ok) { alert('Upload failed: ' + (data.detail || res.status)); return; }
                 const seg = data.segmentation || {};
-                alert(`Analysis complete.\n\nSeverity: ${seg.severity || '—'}\nRisk: ${seg.risk_score || '—'}\nArea: ${seg.area || '—'}`);
+                alert(`Analysis complete.\n\nSeverity: ${seg.severity || '—'}\nRisk: ${seg.risk_score || '—'}\nWound area: ${seg.area || '—'}\nCoverage: ${seg.coverage || '—'}`);
                 // Refresh patient list (risk was updated server-side) and re-open the modal with new data
                 await loadPatients();
                 renderAll();
-                await viewPatient(currentViewPatientId);
+                const reopenId = currentViewPatientId;
+                await viewPatient(reopenId);
             } catch (err) {
                 alert('Upload error: ' + err.message);
             }

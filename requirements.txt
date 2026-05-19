@@ -6,5 +6,7 @@ python-jose[cryptography]
 passlib[bcrypt]
 bcrypt==4.0.1
 Pillow
+opencv-python-headless
+numpy
 python-multipart
 email-validator

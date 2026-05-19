@@ -47,40 +47,38 @@ async def upload_and_analyze_wound(
     with open(file_path, "wb") as buffer:
         buffer.write(image_bytes)
 
-    # 3. Analyze the Image using our AI Engine
+    # 3. Run wound segmentation + risk scoring
     try:
-        ai_result = analyze_wound_image(image_bytes)
+        ai_result = analyze_wound_image(image_bytes, upload_dir=UPLOAD_DIR)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Analysis failed: {str(e)}")
 
-    # Extract results from AI
     risk_score = ai_result["risk_score"]
     severity = ai_result["severity"]
     wound_area = ai_result["wound_area_pixels"]
+    coverage = ai_result["coverage"]
+    mask_path = ai_result.get("mask_path")
 
-    # 4. Update Database
-    # Update the current risk on the patient profile
+    # 4. Persist — store the overlay (annotated) image in history so the
+    # doctor sees the AI's segmentation, not the raw photo.
     patient.risk = risk_score
-    
-    # Create a new record in the RiskHistory table
     history_record = RiskHistory(
         patient_id=patient.id,
         risk=risk_score,
-        image_path=file_path # Saving the path so we can view it later in the UI
+        image_path=mask_path or file_path.replace("\\", "/"),
     )
-    
     db.add(history_record)
     db.commit()
 
-    # 5. Return structured JSON matching the Frontend expectations
     return {
         "message": "Image analyzed successfully",
-        "image_url": f"/{file_path}", # The frontend needs this to display the uploaded image
+        "image_url": "/" + file_path.replace("\\", "/"),
+        "mask_url": ("/" + mask_path) if mask_path else None,
         "segmentation": {
             "severity": severity,
             "risk_score": f"{risk_score}%",
-            "area": f"{wound_area} pixels",
+            "area": f"{int(wound_area)} pixels",
+            "coverage": f"{coverage * 100:.2f}%",
             "type": patient.medical_history or "Unspecified Wound",
-            "coverage": f"{(risk_score / 100):.2f} ratio"
-        }
+        },
     }
