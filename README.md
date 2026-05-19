@@ -238,6 +238,46 @@ Interactive docs at **http://127.0.0.1:8000/docs**.
 
 ---
 
+## Troubleshooting
+
+### I see `{"status":"MedAura AI Backend is running smoothly!"}` instead of the login page
+
+That JSON now lives at `/health`, not `/`. The root path `/` serves the login page as HTML. If you're seeing the JSON at `/`, you're on an outdated clone — run:
+
+```bash
+git pull
+```
+
+and restart the server. Then visit **http://127.0.0.1:8000** (not `/health`).
+
+### `ModuleNotFoundError: No module named '...'`
+
+You didn't install dependencies in the active environment. Run:
+
+```bash
+pip install -r requirements.txt
+```
+
+inside your virtualenv (if you're using one).
+
+### `passlib` / `bcrypt` error: "password cannot be longer than 72 bytes"
+
+This is a passlib 1.7 vs bcrypt 4.1+ incompatibility. The requirements file pins `bcrypt==4.0.1` to avoid it — make sure you actually installed from `requirements.txt`, not a higher version.
+
+### Port 8000 is in use
+
+```bash
+uvicorn main:app --port 8001
+```
+
+…or kill whatever's holding port 8000.
+
+### `database.db` file lock errors on Windows
+
+Stop any running Python/uvicorn process before deleting it. SQLite holds an exclusive lock while the server is up.
+
+---
+
 ## Resetting the database
 
 Stop the server, delete `database.db`, then restart:
