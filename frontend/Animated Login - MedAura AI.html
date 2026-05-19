@@ -336,7 +336,7 @@ async function handleLogin() {
 
             localStorage.setItem("token", data.access_token);
             localStorage.setItem("role", "patient");
-            window.location.href = "MedAura AI - Integrated Dashboard.html";
+            window.location.href = "/app/MedAura AI - Integrated Dashboard.html";
         } else {
             const email = document.getElementById('loginDoctorUsername').value.trim();
             const pass = document.getElementById('loginDoctorPass').value;
@@ -352,7 +352,7 @@ async function handleLogin() {
 
             localStorage.setItem("token", data.access_token);
             localStorage.setItem("role", "doctor");
-            window.location.href = "Doctor_Dashboard1.html";
+            window.location.href = "/app/Doctor_Dashboard1.html";
         }
     } catch (err) {
         alert("Could not reach the backend. Is the server running on " + API_BASE + "?");
