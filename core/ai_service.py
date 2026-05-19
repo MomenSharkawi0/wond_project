@@ -1,15 +1,17 @@
 """
-Wound segmentation + risk scoring.
+Wound segmentation + risk scoring (OpenCV-based).
 
-Strategy:
-- Detect wound-like regions by color (red/pink hues) + dark necrotic tissue in HSV/grayscale
-- Clean the mask with morphological operations and keep the largest connected component
-- Render an overlay image with translucent red fill + bright yellow outline
-- Compute a risk score from the wound coverage ratio and the mean redness inside the mask
+The naive approach of "thresholding red in HSV" fails on skin photographs
+because pale skin itself passes a generous red threshold. This version:
 
-The original unet_model.h5 in this repo is not loaded — it was flagged as
-corrupted by the original author and OpenCV-based segmentation is sufficient
-to produce a clear visual mask + clinically interpretable metrics.
+1. Uses the LAB color space's `a` channel (red-green axis) which separates
+   wound tissue from surrounding skin much more reliably than HSV
+2. Picks an adaptive cutoff (mean + k*stdev, plus a high percentile) so the
+   threshold scales with the actual color distribution of THIS image, not a
+   hardcoded one
+3. Additionally requires high HSV saturation, killing pale-skin false positives
+4. Scores candidate blobs by `area * compactness²`, preferring round wound-like
+   regions over long thin strips of skin
 """
 import io
 import os
@@ -30,50 +32,71 @@ def _classify(risk_score: int) -> str:
 
 
 def _segment(img_rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
-    """Return (binary_mask, largest_contour_or_None) for the wound region."""
+    """
+    Returns (binary_wound_mask, contour). Mask is all zeros if no plausible
+    wound was found.
+    """
     h, w = img_rgb.shape[:2]
     total_pixels = h * w
 
+    # LAB 'a' channel: 128 = neutral, >128 = redder, <128 = greener.
+    lab = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2LAB)
+    a_channel = lab[..., 1]
     hsv = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV)
+    s_channel = hsv[..., 1]
 
-    # Red wraps around 0/180 in HSV; cover both ends.
-    red1 = cv2.inRange(hsv, np.array([0, 60, 50]), np.array([15, 255, 255]))
-    red2 = cv2.inRange(hsv, np.array([160, 60, 50]), np.array([180, 255, 255]))
-    mask = cv2.bitwise_or(red1, red2)
+    # Adaptive red-threshold: keep only pixels that are statistical outliers
+    # toward red AND have meaningful saturation. The stricter of (mean+1.5σ,
+    # 92nd percentile) avoids both noisy and uniformly-red images.
+    a_mean, a_std = float(a_channel.mean()), float(a_channel.std())
+    a_pct = float(np.percentile(a_channel, 92))
+    a_thresh = max(a_mean + 1.5 * a_std, a_pct, a_mean + 8.0)
 
-    # Add very dark regions (necrotic / eschar tissue).
-    gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
-    mask = cv2.bitwise_or(mask, cv2.inRange(gray, 0, 45))
+    candidate = ((a_channel > a_thresh) & (s_channel > 50)).astype(np.uint8) * 255
 
-    # Clean noise then close gaps.
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+    # Open then close — open kills thin strips, close fills wound interior gaps.
+    k = np.ones((5, 5), np.uint8)
+    candidate = cv2.morphologyEx(candidate, cv2.MORPH_OPEN, k, iterations=2)
+    candidate = cv2.morphologyEx(candidate, cv2.MORPH_CLOSE, k, iterations=3)
 
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(candidate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        return np.zeros_like(mask), None
+        return np.zeros_like(candidate), None
 
-    biggest = max(contours, key=cv2.contourArea)
-    # Reject tiny specks (< 0.1% of image).
-    if cv2.contourArea(biggest) < total_pixels * 0.001:
-        return np.zeros_like(mask), None
+    # Score each blob by area * compactness² so we prefer round wound-shaped
+    # regions over long thin skin-coloured strips touching the image edge.
+    best, best_score = None, 0.0
+    min_area = total_pixels * 0.002  # ignore tiny specks (< 0.2% of image)
+    for c in contours:
+        area = cv2.contourArea(c)
+        if area < min_area:
+            continue
+        perim = cv2.arcLength(c, closed=True)
+        if perim <= 0:
+            continue
+        compactness = 4.0 * np.pi * area / (perim * perim)  # 1.0 = perfect circle
+        score = area * (compactness ** 2)
+        if score > best_score:
+            best_score = score
+            best = c
 
-    wound = np.zeros_like(mask)
-    cv2.drawContours(wound, [biggest], -1, 255, thickness=cv2.FILLED)
-    return wound, biggest
+    if best is None:
+        return np.zeros_like(candidate), None
+
+    wound = np.zeros_like(candidate)
+    cv2.drawContours(wound, [best], -1, 255, thickness=cv2.FILLED)
+    return wound, best
 
 
 def _render_overlay(img_rgb: np.ndarray, wound_mask: np.ndarray, contour) -> np.ndarray:
-    """Composite a translucent red fill + yellow outline onto a copy of the image."""
     img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
     overlay = img_bgr.copy()
-    red_layer = np.zeros_like(img_bgr)
-    red_layer[wound_mask > 0] = (0, 0, 255)  # BGR red
-    overlay = cv2.addWeighted(overlay, 1.0, red_layer, 0.40, 0)
+    if wound_mask.any():
+        red_layer = np.zeros_like(img_bgr)
+        red_layer[wound_mask > 0] = (0, 0, 255)  # BGR red
+        overlay = cv2.addWeighted(overlay, 1.0, red_layer, 0.35, 0)
     if contour is not None:
-        cv2.drawContours(overlay, [contour], -1, (0, 255, 255), thickness=2)  # yellow
-        # Annotate area centroid with risk label area
+        cv2.drawContours(overlay, [contour], -1, (0, 255, 255), thickness=2)
         M = cv2.moments(contour)
         if M["m00"]:
             cx, cy = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
@@ -83,12 +106,7 @@ def _render_overlay(img_rgb: np.ndarray, wound_mask: np.ndarray, contour) -> np.
 
 def analyze_wound_image(image_bytes: bytes, upload_dir: str = "uploads") -> dict:
     """
-    Analyze a wound image. Always returns a dict with keys:
-        risk_score: int 0-100
-        wound_area_pixels: float
-        coverage: float (wound / total image area)
-        severity: str
-        mask_path: str | None — path to overlay image, relative to project root
+    Returns: { risk_score, wound_area_pixels, coverage, severity, mask_path }
     """
     try:
         pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -103,23 +121,28 @@ def analyze_wound_image(image_bytes: bytes, upload_dir: str = "uploads") -> dict
     total_pixels = h * w
 
     wound_mask, contour = _segment(img_rgb)
-    wound_pixels = int(wound_mask.sum() / 255) if wound_mask.any() else 0
+    wound_pixels = int(wound_mask.sum() // 255) if wound_mask.any() else 0
     coverage = wound_pixels / total_pixels if total_pixels else 0.0
 
     if contour is not None and wound_pixels > 0:
-        # Mean redness inside the wound (R channel of original RGB)
-        r_channel = img_rgb[..., 0].astype(np.float32)
-        mean_red = float(r_channel[wound_mask > 0].mean()) / 255.0
-        risk_score = int(min(95, max(15, coverage * 220 + mean_red * 40)))
-    else:
-        # No clear wound detected
-        risk_score = 12
+        # Combine coverage with how much redder the wound is vs. surrounding skin
+        lab = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2LAB)
+        a_channel = lab[..., 1].astype(np.float32)
+        wound_a = float(a_channel[wound_mask > 0].mean())
+        skin_a = float(a_channel[wound_mask == 0].mean()) if (wound_mask == 0).any() else wound_a
+        redness_excess = max(0.0, (wound_a - skin_a) / 15.0)  # 0..~3
 
-    # Render the overlay even if no wound was found (just original image).
+        # Calibration so visible wounds score reasonably:
+        # ~1% coverage → ~25, ~5% → ~55, ~10% → ~75, ~20% → ~95
+        risk_score = int(min(95, max(10, coverage * 600 + redness_excess * 22)))
+    else:
+        # No plausible wound detected
+        risk_score = 8
+
     overlay = _render_overlay(img_rgb, wound_mask, contour)
     os.makedirs(upload_dir, exist_ok=True)
     mask_filename = f"mask_{uuid.uuid4().hex[:8]}.jpg"
-    mask_path = os.path.join(upload_dir, mask_filename)
+    mask_path = os.path.join(upload_dir, mask_filename).replace("\\", "/")
     cv2.imwrite(mask_path, overlay)
 
     return {
@@ -127,5 +150,5 @@ def analyze_wound_image(image_bytes: bytes, upload_dir: str = "uploads") -> dict
         "wound_area_pixels": float(wound_pixels),
         "coverage": round(coverage, 4),
         "severity": _classify(risk_score),
-        "mask_path": mask_path.replace("\\", "/"),
+        "mask_path": mask_path,
     }
