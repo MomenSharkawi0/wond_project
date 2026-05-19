@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.database import SessionLocal
 from models.models import Patient, RiskHistory
-from schemas.schemas import PatientCreate, PatientOut
+from schemas.schemas import PatientCreate, PatientOut, PatientUpdate
 from core.auth import doctor_only, patient_only, hash_password
 
 router = APIRouter(prefix="/patient", tags=["patient"])
@@ -36,6 +36,18 @@ def add_patient(patient: PatientCreate, db: Session = Depends(get_db), current_d
         "message": "Patient added successfully",
         "patient_code": db_patient.patient_code
     }
+
+@router.put("/{p_id}", response_model=PatientOut)
+def update_patient(p_id: int, updates: PatientUpdate, db: Session = Depends(get_db), current_doctor=Depends(doctor_only)):
+    patient = db.query(Patient).filter(Patient.id == p_id, Patient.doctor_id == current_doctor.id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    payload = updates.dict(exclude_unset=True)
+    for key, value in payload.items():
+        setattr(patient, key, value)
+    db.commit()
+    db.refresh(patient)
+    return patient
 
 @router.delete("/delete/{p_id}")
 def delete_patient(p_id: int, db: Session = Depends(get_db), current_doctor=Depends(doctor_only)):

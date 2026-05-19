@@ -19,11 +19,18 @@ class PatientOut(BaseModel):
     email: str
     age: int
     gender: str
+    medical_history: Optional[str] = None
     risk: int
     doctor_id: Optional[int] = None
 
     class Config:
         from_attributes = True
+
+class PatientUpdate(BaseModel):
+    p_name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    medical_history: Optional[str] = None
 
 # ===== Doctor =====
 

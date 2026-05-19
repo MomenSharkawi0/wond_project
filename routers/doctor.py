@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.database import SessionLocal
-from models.models import Patient, RiskHistory
+from models.models import Patient, RiskHistory, Doctor
 from schemas.schemas import PatientOut, RiskHistoryOut, DoctorOut
 from core.auth import doctor_only
 
@@ -18,6 +18,11 @@ def get_db():
 @router.get("/me", response_model=DoctorOut)
 def get_my_profile(current_doctor=Depends(doctor_only)):
     return current_doctor
+
+# ===== List all doctors (for "Doctors on Duty" widget) =====
+@router.get("/all", response_model=list[DoctorOut])
+def list_all_doctors(db: Session = Depends(get_db), current_doctor=Depends(doctor_only)):
+    return db.query(Doctor).all()
 
 # ===== Get all patients =====
 @router.get("/patients", response_model=list[PatientOut])

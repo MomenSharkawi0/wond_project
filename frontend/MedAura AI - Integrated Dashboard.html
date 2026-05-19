@@ -386,12 +386,13 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
             <div class="nav-item" data-page="analytics"><i class="fas fa-chart-line"></i> Analytics</div>
             <div class="nav-item" data-page="settings"><i class="fas fa-cog"></i> Settings</div>
         </nav>
-        <div class="sidebar-footer">
-            <div class="doc-avatar">AR</div>
-            <div>
-                <div class="doc-name">Arthur Morgan</div>
-                <div class="doc-spec">Patient</div>
+        <div class="sidebar-footer" style="display:flex;align-items:center;gap:10px;">
+            <div class="doc-avatar" id="sideAvatar">??</div>
+            <div style="flex:1;min-width:0;">
+                <div class="doc-name" id="sideName">Loading…</div>
+                <div class="doc-spec" id="sideSpec">—</div>
             </div>
+            <button onclick="logout()" title="Logout" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:0.2s;" onmouseover="this.style.borderColor='#ff7b72';this.style.color='#ff7b72'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </aside>
 
@@ -418,16 +419,14 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
                     <div class="card">
                         <span class="card-label">Patient Profile</span><br><br>
                         <div class="p-header">
-                            <div class="p-img" style="background:linear-gradient(135deg,#ff4b91,#a855f7);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;border:none;flex-shrink:0;">EV</div>
+                            <div class="p-img" id="patientAvatar" style="background:linear-gradient(135deg,#ff4b91,#a855f7);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;border:none;flex-shrink:0;">??</div>
                             <div>
-                                <div class="p-name">Eleanor Vance</div>
-                                <div class="p-id">ID: P-10234 · Age 67</div>
+                                <div class="p-name" id="patientName">Loading…</div>
+                                <div class="p-id" id="patientMeta">—</div>
                             </div>
                         </div>
-                        <div class="history-list">
-                            <div class="h-item purple">Diabetes II <small>12 Mon · July 2023</small></div>
-                            <div class="h-item purple">Hypertension <small>8 Mon · Nov 2023</small></div>
-                            <div class="h-item accent">Ulcer 2023 <small>Medical Timeline</small></div>
+                        <div class="history-list" id="patientHistory">
+                            <div class="h-item purple">Loading medical history…</div>
                         </div>
                     </div>
 
@@ -477,8 +476,8 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
                     <!-- Row 2: Infection Risk / Healing Progress -->
                     <div class="card">
                         <span class="card-label">Infection Risk</span>
-                        <div class="risk-value">84% <span class="status">HIGH</span></div>
-                        <div class="risk-stage">Stage 2 — Diabetic Foot Ulcer</div>
+                        <div class="risk-value"><span id="riskValue">—%</span> <span class="status" id="riskStatus">—</span></div>
+                        <div class="risk-stage" id="riskStage">No analysis yet</div>
                     </div>
 
                     <!-- Healing Progress -->
@@ -839,9 +838,10 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
 
         closeCamera();
 
-        // ابعت للـ backend
-        const patientId = JSON.parse(localStorage.getItem('selectedPatient') || '{}').id || null;
+        const patientId = activePatient ? activePatient.id : null;
+        if (!patientId) { alert("No patient selected"); return; }
         await uploadWoundImage(base64, patientId);
+        await loadPatientHistory();
     }
 
     async function uploadImage() {
@@ -866,43 +866,110 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
 
             closeCamera();
 
-            // ابعت الـ File مباشرةً للـ backend
-            const patientId = JSON.parse(localStorage.getItem('selectedPatient') || '{}').id || null;
+            const patientId = activePatient ? activePatient.id : null;
+            if (!patientId) { alert("No patient selected"); return; }
             await uploadWoundImage(file, patientId);
+            await loadPatientHistory();
         };
         input.click();
     }
 
-    // Load patients (graceful fail if API offline)
-    async function loadPatients() {
+    // ===== Auth / logout =====
+    const API_BASE = "http://127.0.0.1:8000";
+    function getToken() { return localStorage.getItem("token"); }
+    function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("selectedPatient");
+        window.location.href = "/app/Animated Login - MedAura AI.html";
+    }
+    async function apiFetch(path, options = {}) {
+        const opts = { ...options, headers: { "Authorization": "Bearer " + getToken(), ...(options.headers || {}) } };
+        if (options.body && !opts.headers["Content-Type"] && typeof options.body === "string") opts.headers["Content-Type"] = "application/json";
+        const res = await fetch(API_BASE + path, opts);
+        if (res.status === 401) { logout(); throw new Error("Session expired"); }
+        return res;
+    }
+    function initials(name) { return (name || "?").split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase(); }
+
+    let activePatient = null;
+
+    async function loadActivePatient() {
+        const role = localStorage.getItem("role");
+        if (role === "patient") {
+            const res = await apiFetch("/patient/me");
+            if (!res.ok) throw new Error("Could not load profile");
+            const me = await res.json();
+            activePatient = me;
+        } else if (role === "doctor") {
+            const sel = JSON.parse(localStorage.getItem("selectedPatient") || "null");
+            if (sel) {
+                activePatient = { id: sel.id, p_name: sel.name, age: sel.age, gender: sel.gender || "—",
+                                  medical_history: sel.condition, patient_code: sel.patient_code, risk: 0 };
+            } else {
+                // Doctor opened this page directly; bounce back to their dashboard
+                window.location.href = "/app/Doctor_Dashboard1.html";
+                return;
+            }
+        } else {
+            logout();
+            return;
+        }
+        renderActivePatient();
+        await loadPatientHistory();
+    }
+
+    function renderActivePatient() {
+        if (!activePatient) return;
+        const ini = initials(activePatient.p_name);
+        document.getElementById("sideAvatar").textContent = ini;
+        document.getElementById("sideName").textContent = activePatient.p_name;
+        document.getElementById("sideSpec").textContent = (localStorage.getItem("role") === "patient") ? "Patient" : `Patient · code ${activePatient.patient_code || ""}`;
+        document.getElementById("patientAvatar").textContent = ini;
+        document.getElementById("patientName").textContent = activePatient.p_name;
+        document.getElementById("patientMeta").textContent = `Code: ${activePatient.patient_code || "—"} · Age ${activePatient.age}`;
+        document.getElementById("pageSubtitle").textContent = `Patient: ${activePatient.p_name} · code ${activePatient.patient_code || "—"} · Age ${activePatient.age}`;
+
+        const history = document.getElementById("patientHistory");
+        const cond = activePatient.medical_history;
+        if (cond && cond.trim()) {
+            history.innerHTML = `<div class="h-item purple">${cond} <small>Medical history</small></div>`;
+        } else {
+            history.innerHTML = `<div class="h-item" style="color:var(--muted);">No medical history on file</div>`;
+        }
+
+        const risk = activePatient.risk || 0;
+        const riskLabel = risk >= 80 ? "CRITICAL" : risk >= 60 ? "HIGH" : risk >= 40 ? "MEDIUM" : risk > 0 ? "STABLE" : "—";
+        document.getElementById("riskValue").textContent = risk ? `${risk}%` : "—%";
+        document.getElementById("riskStatus").textContent = riskLabel;
+        document.getElementById("riskStage").textContent = cond || "No wound classified yet";
+    }
+
+    async function loadPatientHistory() {
+        if (!activePatient) return;
+        const role = localStorage.getItem("role");
+        const path = role === "patient" ? "/patient/risk/history/" + activePatient.id : "/patient/risk/history/" + activePatient.id;
         try {
-            const res = await fetch("http://127.0.0.1:8000/patient/all", {
-                headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
-            });
-            const patients = await res.json();
-            const tbody = document.getElementById("patientsTableBody");
-            if (!tbody) return;
-            tbody.innerHTML = "";
-            patients.forEach(p => {
-                tbody.innerHTML += `<tr>
-                    <td>${p.p_name}</td><td>${p.id}</td>
-                    <td><span class="badge b-critical">${p.risk}%</span></td>
-                    <td>-</td>
-                    <td><button onclick="deletePatient(${p.id})" style="color:#ff7b72;background:none;border:none;cursor:pointer;"><i class="fas fa-trash"></i></button></td>
-                </tr>`;
-            });
-        } catch(e) { console.warn("API offline:", e.message); }
+            const res = await apiFetch(path);
+            if (!res.ok) return;
+            const history = await res.json();
+            if (!history.length) return;
+            history.sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at));
+            const latest = history[history.length - 1];
+            activePatient.risk = latest.risk;
+            renderActivePatient();
+            // Update chart if a Chart instance exists
+            if (typeof healingChart !== 'undefined' && healingChart && history.length > 1) {
+                const labels = history.slice(-7).map(h => new Date(h.recorded_at).toLocaleDateString('en-US', { month:'short', day:'numeric' }));
+                const data = history.slice(-7).map(h => h.risk);
+                healingChart.data.labels = labels;
+                healingChart.data.datasets[0].data = data;
+                healingChart.update();
+            }
+        } catch (e) { /* ignore */ }
     }
 
-    async function deletePatient(id) {
-        await fetch("http://127.0.0.1:8000/patient/delete/" + id, {
-            method: "DELETE",
-            headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
-        });
-        loadPatients();
-    }
-
-    loadPatients();
+    loadActivePatient();
 
     // ── SETTINGS FUNCTIONS ──
     const translations = {

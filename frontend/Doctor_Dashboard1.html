@@ -214,28 +214,18 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
             <!-- DASHBOARD PAGE -->
             <div id="dashboard-page" class="page active">
                 <div class="stats-row">
-                    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val" id="statTotal">6</div><div class="stat-label" data-lang="stat_patients">Total Patients</div></div></div>
-                    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-info"><div class="stat-val" id="statCritical">2</div><div class="stat-label" data-lang="stat_critical">Critical Cases</div></div></div>
-                    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-calendar-check"></i></div><div class="stat-info"><div class="stat-val">8</div><div class="stat-label" data-lang="stat_appointments">Today's Appointments</div></div></div>
-                    <div class="stat-card"><div class="stat-icon si-purple"><i class="fas fa-heartbeat"></i></div><div class="stat-info"><div class="stat-val">91%</div><div class="stat-label" data-lang="stat_recovery">Recovery Rate</div></div></div>
+                    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val" id="statTotal">0</div><div class="stat-label" data-lang="stat_patients">Total Patients</div></div></div>
+                    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-info"><div class="stat-val" id="statCritical">0</div><div class="stat-label" data-lang="stat_critical">Critical Cases</div></div></div>
+                    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-calendar-check"></i></div><div class="stat-info"><div class="stat-val" id="statAppts">0</div><div class="stat-label" data-lang="stat_appointments">Today's Appointments</div></div></div>
+                    <div class="stat-card"><div class="stat-icon si-purple"><i class="fas fa-heartbeat"></i></div><div class="stat-info"><div class="stat-val" id="statRecovery">—</div><div class="stat-label" data-lang="stat_recovery">Recovery Rate</div></div></div>
                 </div>
                 <div class="two-col">
                     <div class="card"><div class="card-header"><span class="card-title" data-lang="recent_patients">Recent Patients</span><span class="card-action" onclick="switchPage('patients')">View all →</span></div><table class="pt-table"><thead><tr><th>Patient</th><th>Condition</th><th>Risk</th><th>Status</th><th></th></tr></thead><tbody id="recentPatientsBody"></tbody></table></div>
-                    <div class="card"><div class="card-header"><span class="card-title" data-lang="today_appointments">Today's Appointments</span><span class="card-action" onclick="switchPage('appointments')">All →</span></div><div class="appt-list">
-                        <div class="appt-item"><div class="appt-time">09:00</div><div class="appt-sep"></div><div class="appt-info"><div class="appt-name">Eleanor Vance</div><div class="appt-type">Wound Dressing Change</div></div><span class="appt-status as-done">Done</span></div>
-                        <div class="appt-item"><div class="appt-time">10:30</div><div class="appt-sep"></div><div class="appt-info"><div class="appt-name">Mohamed Karim</div><div class="appt-type">Follow-up Assessment</div></div><span class="appt-status as-done">Done</span></div>
-                        <div class="appt-item"><div class="appt-time">11:00</div><div class="appt-sep"></div><div class="appt-info"><div class="appt-name">Sara Ahmed</div><div class="appt-type">Post-op Checkup</div></div><span class="appt-status as-next">Next</span></div>
-                    </div></div>
+                    <div class="card"><div class="card-header"><span class="card-title" data-lang="today_appointments">Today's Appointments</span><span class="card-action" onclick="switchPage('appointments')">All →</span></div><div class="appt-list" id="todayApptList"><div style="color:var(--muted);font-size:12px;padding:14px 0;text-align:center;">Loading…</div></div></div>
                 </div>
                 <div class="bottom-row">
-                    <div class="card"><div class="card-header"><span class="card-title" data-lang="critical_alerts">Critical Alerts</span><span class="badge b-critical">2 Active</span></div><div class="alert-list">
-                        <div class="alert-item critical"><span style="font-size:16px">⚠️</span><div class="alert-info"><div class="alert-name">Khaled Mostafa</div><div class="alert-msg">Infection risk reached 91%</div></div><div class="alert-time">Now</div></div>
-                        <div class="alert-item critical"><span style="font-size:16px">🩸</span><div class="alert-info"><div class="alert-name">Eleanor Vance</div><div class="alert-msg">Stage 2 ulcer — dressing overdue 6h</div></div><div class="alert-time">2h ago</div></div>
-                    </div></div>
-                    <div class="card"><div class="card-header"><span class="card-title" data-lang="doctors_duty">Doctors on Duty</span></div><div class="doctors-list">
-                        <div class="doctor-item"><div class="dr-avatar av1">RH</div><div class="dr-info"><div class="dr-name">Dr. Ramy Hassan</div><div class="dr-spec">Wound Specialist · <span class="dr-patients">8 patients</span></div></div><div class="dr-status online"></div></div>
-                        <div class="doctor-item"><div class="dr-avatar av3">LM</div><div class="dr-info"><div class="dr-name">Dr. Layla Mansour</div><div class="dr-spec">Diabetologist · <span class="dr-patients">6 patients</span></div></div><div class="dr-status busy"></div></div>
-                    </div></div>
+                    <div class="card"><div class="card-header"><span class="card-title" data-lang="critical_alerts">Critical Alerts</span><span class="badge b-critical" id="criticalBadge">0 Active</span></div><div class="alert-list" id="criticalAlertsList"></div></div>
+                    <div class="card"><div class="card-header"><span class="card-title" data-lang="doctors_duty">Doctors on Duty</span></div><div class="doctors-list" id="doctorsList"></div></div>
                 </div>
             </div>
 
@@ -251,11 +241,8 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
 
             <!-- APPOINTMENTS PAGE -->
             <div id="appointments-page" class="page">
-                <div class="page-header"><div><div class="page-title" data-lang="appointments">Appointments</div><div class="page-sub">Wednesday, 30 April 2025</div></div><button class="add-btn"><i class="fas fa-plus"></i> <span data-lang="new_appointment">New Appointment</span></button></div>
-                <div class="appt-grid">
-                    <div class="time-slot"><div class="ts-time">09:00</div><div class="ts-info"><div class="ts-name">Eleanor Vance</div><div class="ts-type">Wound Dressing Change</div><div class="ts-tags"><span class="badge b-stable">Completed</span></div></div></div>
-                    <div class="time-slot"><div class="ts-time">11:00</div><div class="ts-info"><div class="ts-name">Sara Ahmed</div><div class="ts-type">Post-op Checkup</div><div class="ts-tags"><span class="badge b-low">Now</span></div></div></div>
-                </div>
+                <div class="page-header"><div><div class="page-title" data-lang="appointments">Appointments</div><div class="page-sub" id="apptPageSub">All scheduled appointments</div></div><button class="add-btn" onclick="openNewApptModal()"><i class="fas fa-plus"></i> <span data-lang="new_appointment">New Appointment</span></button></div>
+                <div class="appt-grid" id="apptGrid"><div style="grid-column:1/-1;color:var(--muted);font-size:12px;padding:20px 0;text-align:center;">Loading appointments…</div></div>
             </div>
 
             <!-- WOUND AI PAGE -->
@@ -306,6 +293,26 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
         <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end;">
             <button onclick="closeAddModal()" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:9px 20px;border-radius:50px;font-size:12px;cursor:pointer;">Cancel</button>
             <button onclick="submitPatient()" style="background:var(--purple);color:white;border:none;padding:9px 24px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- NEW APPOINTMENT MODAL -->
+<div id="apptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:22px;padding:28px;width:480px;max-width:95vw;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+            <div><div style="font-size:16px;font-weight:700;color:var(--text);">New Appointment</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Schedule an appointment for one of your patients</div></div>
+            <div onclick="closeApptModal()" style="width:32px;height:32px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;">✕</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:14px;">
+            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Patient</label><select id="appt-patient" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></select></div>
+            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Date &amp; Time</label><input id="appt-datetime" type="datetime-local" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Notes</label><input id="appt-notes" type="text" placeholder="e.g. Wound dressing change" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+        </div>
+        <div id="appt-error" style="display:none;color:#ff7b72;font-size:12px;margin-top:12px;padding:8px 12px;background:rgba(255,123,114,0.1);border-radius:8px;"></div>
+        <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end;">
+            <button onclick="closeApptModal()" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:9px 20px;border-radius:50px;font-size:12px;cursor:pointer;">Cancel</button>
+            <button onclick="submitAppointment()" style="background:var(--purple);color:white;border:none;padding:9px 24px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;">Schedule</button>
         </div>
     </div>
 </div>
@@ -393,15 +400,19 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
         }
     }
 
+    let appointments = [];
+    let allDoctors = [];
+
     async function loadPatients() {
         try {
             const res = await apiFetch('/doctor/patients');
-            if (!res.ok) { patients = []; renderPatients(); return; }
+            if (!res.ok) { patients = []; return; }
             const data = await res.json();
             patients = data.map(p => ({
                 id: p.id,
                 patient_code: p.patient_code,
                 name: p.p_name,
+                email: p.email,
                 gender: p.gender,
                 age: p.age,
                 condition: p.medical_history || 'Not specified',
@@ -409,12 +420,150 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
                 lastVisit: '—',
                 images: []
             }));
-            renderPatients();
         } catch (err) {
             console.error(err);
             patients = [];
-            renderPatients();
         }
+    }
+
+    async function loadAppointments() {
+        if (!currentDoctor) return;
+        try {
+            const res = await apiFetch('/appointments/doctor/' + currentDoctor.id);
+            if (!res.ok) { appointments = []; return; }
+            appointments = await res.json();
+            appointments.sort((a, b) => new Date(a.date) - new Date(b.date));
+        } catch (err) { console.error(err); appointments = []; }
+    }
+
+    async function loadAllDoctors() {
+        try {
+            const res = await apiFetch('/doctor/all');
+            if (!res.ok) { allDoctors = []; return; }
+            allDoctors = await res.json();
+        } catch (err) { console.error(err); allDoctors = []; }
+    }
+
+    function fmtTime(iso) { return new Date(iso).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false }); }
+    function isToday(iso) { const d = new Date(iso); const t = new Date(); return d.toDateString() === t.toDateString(); }
+
+    function renderTodayAppointments() {
+        const todays = appointments.filter(a => isToday(a.date));
+        const sa = document.getElementById('statAppts'); if (sa) sa.textContent = todays.length;
+        const list = document.getElementById('todayApptList'); if (!list) return;
+        if (todays.length === 0) {
+            list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:14px 0;text-align:center;">No appointments scheduled for today</div>';
+            return;
+        }
+        list.innerHTML = todays.slice(0, 5).map(a => {
+            const p = patients.find(x => x.id === a.patient_id);
+            const name = p ? p.name : `Patient #${a.patient_id}`;
+            const statusCls = a.status === 'done' ? 'as-done' : a.status === 'next' ? 'as-next' : 'as-waiting';
+            const statusLbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
+            return `<div class="appt-item"><div class="appt-time">${fmtTime(a.date)}</div><div class="appt-sep"></div><div class="appt-info"><div class="appt-name">${name}</div><div class="appt-type">${a.notes || 'Consultation'}</div></div><span class="appt-status ${statusCls}">${statusLbl}</span></div>`;
+        }).join('');
+    }
+
+    function renderCriticalAlerts() {
+        const critical = patients.filter(p => p.risk >= 80);
+        const badge = document.getElementById('criticalBadge'); if (badge) badge.textContent = `${critical.length} Active`;
+        const list = document.getElementById('criticalAlertsList'); if (!list) return;
+        if (critical.length === 0) {
+            list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:14px 0;text-align:center;">No critical patients right now ✅</div>';
+            return;
+        }
+        list.innerHTML = critical.slice(0, 4).map(p => `<div class="alert-item critical" onclick="viewPatient(${p.id})" style="cursor:pointer;"><span style="font-size:16px">⚠️</span><div class="alert-info"><div class="alert-name">${p.name}</div><div class="alert-msg">Risk reached ${p.risk}% — ${p.condition}</div></div><div class="alert-time">Now</div></div>`).join('');
+    }
+
+    function renderDoctorsOnDuty() {
+        const list = document.getElementById('doctorsList'); if (!list) return;
+        if (allDoctors.length === 0) { list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:14px 0;text-align:center;">No doctors found</div>'; return; }
+        list.innerHTML = allDoctors.slice(0, 6).map((d, i) => {
+            const isMe = currentDoctor && d.id === currentDoctor.id;
+            const av = avatarColors[i % avatarColors.length];
+            const ini = getInitials(d.name);
+            return `<div class="doctor-item"><div class="dr-avatar ${av}">${ini}</div><div class="dr-info"><div class="dr-name">${d.name}${isMe ? ' <span style="color:var(--purple);font-size:9px;">(you)</span>' : ''}</div><div class="dr-spec">${d.specialty}</div></div><div class="dr-status online"></div></div>`;
+        }).join('');
+    }
+
+    function renderAppointmentsPage() {
+        const grid = document.getElementById('apptGrid'); if (!grid) return;
+        const sub = document.getElementById('apptPageSub');
+        if (appointments.length === 0) {
+            grid.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:13px;padding:30px 0;text-align:center;">No appointments yet. Click "New Appointment" to add one.</div>';
+            if (sub) sub.textContent = '0 appointments';
+            return;
+        }
+        if (sub) sub.textContent = `${appointments.length} appointment${appointments.length === 1 ? '' : 's'}`;
+        grid.innerHTML = appointments.map(a => {
+            const p = patients.find(x => x.id === a.patient_id);
+            const name = p ? p.name : `Patient #${a.patient_id}`;
+            const dt = new Date(a.date);
+            const dateStr = dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+            const timeStr = fmtTime(a.date);
+            const badgeCls = a.status === 'done' ? 'b-stable' : a.status === 'next' ? 'b-medium' : 'b-low';
+            return `<div class="time-slot"><div class="ts-time">${timeStr}<div style="font-size:9px;color:var(--muted);font-weight:400;margin-top:2px;">${dateStr}</div></div><div class="ts-info" style="flex:1;"><div class="ts-name">${name}</div><div class="ts-type">${a.notes || 'Consultation'}</div><div class="ts-tags"><span class="badge ${badgeCls}">${a.status}</span></div></div><div style="display:flex;flex-direction:column;gap:6px;align-self:flex-start;"><button class="btn-sm" onclick="cycleApptStatus(${a.id})">Next status</button><button class="btn-sm danger" onclick="deleteAppointment(${a.id})"><i class="fas fa-trash"></i></button></div></div>`;
+        }).join('');
+    }
+
+    function renderAll() {
+        renderPatients();
+        renderTodayAppointments();
+        renderCriticalAlerts();
+        renderDoctorsOnDuty();
+        renderAppointmentsPage();
+    }
+
+    function openNewApptModal() {
+        if (patients.length === 0) { alert('Add a patient first before scheduling an appointment.'); return; }
+        const select = document.getElementById('appt-patient');
+        select.innerHTML = patients.map(p => `<option value="${p.id}">${p.name} (code ${p.patient_code})</option>`).join('');
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset() + 60);
+        document.getElementById('appt-datetime').value = now.toISOString().slice(0, 16);
+        document.getElementById('appt-notes').value = '';
+        document.getElementById('appt-error').style.display = 'none';
+        document.getElementById('apptModal').style.display = 'flex';
+    }
+    function closeApptModal() { document.getElementById('apptModal').style.display = 'none'; }
+
+    async function submitAppointment() {
+        const patientId = parseInt(document.getElementById('appt-patient').value);
+        const dt = document.getElementById('appt-datetime').value;
+        const notes = document.getElementById('appt-notes').value.trim();
+        const errEl = document.getElementById('appt-error');
+        errEl.style.display = 'none';
+        if (!patientId) { errEl.textContent='Select a patient.'; errEl.style.display='block'; return; }
+        if (!dt) { errEl.textContent='Pick a date & time.'; errEl.style.display='block'; return; }
+        try {
+            const res = await apiFetch('/appointments/', { method:'POST',
+                body: JSON.stringify({ patient_id: patientId, doctor_id: currentDoctor.id, date: new Date(dt).toISOString(), notes: notes || null }) });
+            const data = await res.json();
+            if (!res.ok) { errEl.textContent = data.detail || 'Failed to create'; errEl.style.display='block'; return; }
+            closeApptModal();
+            await loadAppointments();
+            renderTodayAppointments();
+            renderAppointmentsPage();
+        } catch (err) { errEl.textContent = 'Network error: ' + err.message; errEl.style.display='block'; }
+    }
+
+    async function cycleApptStatus(id) {
+        const a = appointments.find(x => x.id === id); if (!a) return;
+        const next = a.status === 'waiting' ? 'next' : a.status === 'next' ? 'done' : 'waiting';
+        const res = await apiFetch(`/appointments/status/${id}?status=${next}`, { method:'PUT' });
+        if (!res.ok) { alert('Could not update status.'); return; }
+        await loadAppointments();
+        renderTodayAppointments();
+        renderAppointmentsPage();
+    }
+
+    async function deleteAppointment(id) {
+        if (!confirm('Delete this appointment?')) return;
+        const res = await apiFetch('/appointments/' + id, { method:'DELETE' });
+        if (!res.ok) { alert('Could not delete.'); return; }
+        await loadAppointments();
+        renderTodayAppointments();
+        renderAppointmentsPage();
     }
 
     /* ====== Language System ====== */
@@ -478,7 +627,10 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
         const noRes  = document.getElementById('noResults');
         
         let filtered = patients.filter(p => {
-            const matchSearch = !query || p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query) || p.condition.toLowerCase().includes(query);
+            const matchSearch = !query
+                || p.name.toLowerCase().includes(query)
+                || String(p.patient_code).includes(query)
+                || p.condition.toLowerCase().includes(query);
             const pStatus = getFilterStatus(p.risk);
             const matchFilter = currentFilter === 'all' || currentFilter === pStatus || (currentFilter === 'stable' && pStatus === 'medium');
             return matchSearch && matchFilter;
@@ -492,20 +644,21 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
                 tbody.innerHTML += `
                 <tr>
                     <td><div class="p-cell"><div class="p-mini-avatar ${av}">${ini}</div><div class="p-name-cell"><strong>${p.name}</strong><span>${p.gender}</span></div></div></td>
-                    <td>${p.id}</td><td>${p.age}</td><td>${p.condition}</td>
+                    <td>${p.patient_code}</td><td>${p.age}</td><td>${p.condition}</td>
                     <td><div>${p.risk}%</div><div class="risk-bar"><div class="risk-fill ${rc.bar}" style="width:${p.risk}%"></div></div></td>
                     <td><span class="badge ${rc.badge}">${rc.label}</span></td><td>${p.lastVisit}</td>
                     <td><div class="action-btns">
-                        <button class="btn-sm" onclick='viewPatient("${p.id}")'><i class="fas fa-eye"></i> View</button>
-                        <button class="btn-sm" onclick='editPatient("${p.id}")'><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn-sm danger" onclick='deletePatient("${p.id}")'><i class="fas fa-trash"></i></button>
+                        <button class="btn-sm" onclick="viewPatient(${p.id})"><i class="fas fa-eye"></i> View</button>
+                        <button class="btn-sm" onclick="editPatient(${p.id})"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn-sm danger" onclick="deletePatient(${p.id})"><i class="fas fa-trash"></i></button>
                     </div></td>
                 </tr>`;
             });
         }
 
         recentTbody.innerHTML = '';
-        patients.slice(0, 4).forEach((p, i) => {
+        const recent = [...patients].sort((a, b) => b.risk - a.risk).slice(0, 4);
+        recent.forEach((p, i) => {
             const rc = getRiskClass(p.risk); const av = avatarColors[i % avatarColors.length]; const ini = getInitials(p.name);
             recentTbody.innerHTML += `
             <tr>
@@ -513,33 +666,57 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
                 <td>${p.condition}</td>
                 <td><div>${p.risk}%</div><div class="risk-bar"><div class="risk-fill ${rc.bar}" style="width:${p.risk}%"></div></div></td>
                 <td><span class="badge ${rc.badge}">${rc.label}</span></td>
-                <td><button class="btn-sm" onclick='viewPatient("${p.id}")'>View</button></td>
+                <td><button class="btn-sm" onclick="viewPatient(${p.id})">View</button></td>
             </tr>`;
         });
 
+        const critical = patients.filter(p => p.risk >= 80).length;
+        const stable = patients.filter(p => p.risk < 40).length;
+        const recovery = patients.length > 0 ? Math.round((stable / patients.length) * 100) : 0;
         document.getElementById('statTotal').textContent = patients.length;
-        document.getElementById('statCritical').textContent = patients.filter(p => p.risk >= 80).length;
-        document.getElementById('patientCountLabel').textContent = `${patients.length} patients · ${patients.filter(p => p.risk >= 80).length} critical cases`;
+        document.getElementById('statCritical').textContent = critical;
+        const recEl = document.getElementById('statRecovery'); if (recEl) recEl.textContent = recovery + '%';
+        document.getElementById('patientCountLabel').textContent = `${patients.length} patients · ${critical} critical cases`;
         document.getElementById('patientBadge').textContent = patients.length;
     }
 
     function setFilter(btn, filter) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentFilter = filter; renderPatients(); }
 
     async function deletePatient(id) {
-        if (!confirm('Are you sure you want to delete this patient?')) return;
+        const p = patients.find(pt => pt.id === Number(id));
+        if (!p) return;
+        if (!confirm(`Delete ${p.name}? This cannot be undone.`)) return;
         try {
-            const res = await apiFetch('/patient/delete/' + id, { method: 'DELETE' });
+            const res = await apiFetch('/patient/delete/' + p.id, { method: 'DELETE' });
             if (!res.ok) { const e = await res.json(); alert('Delete failed: ' + (e.detail || res.status)); return; }
             await loadPatients();
+            renderAll();
         } catch (err) { alert('Network error: ' + err.message); }
     }
 
     function editPatient(id) {
-        alert('Editing patients is not supported by the backend yet — you can update risk on the patient view page, or delete and re-add.');
+        const p = patients.find(pt => pt.id === Number(id));
+        if (!p) return;
+        document.getElementById('inp-editId').value = p.id;
+        document.getElementById('inp-name').value = p.name;
+        document.getElementById('inp-email').value = p.email;
+        document.getElementById('inp-email').disabled = true;
+        document.getElementById('inp-password').value = '';
+        document.getElementById('inp-password').placeholder = '(unchanged on edit)';
+        document.getElementById('inp-password').disabled = true;
+        document.getElementById('inp-age').value = p.age;
+        document.getElementById('inp-gender').value = p.gender;
+        document.getElementById('inp-condition').value = p.condition === 'Not specified' ? '' : p.condition;
+        document.getElementById('modalTitle').textContent = 'Edit Patient';
+        document.getElementById('modal-error').style.display = 'none';
+        document.getElementById('addPatientModal').style.display = 'flex';
     }
 
     function openAddModal() {
         document.getElementById('inp-editId').value = '';
+        document.getElementById('inp-email').disabled = false;
+        document.getElementById('inp-password').disabled = false;
+        document.getElementById('inp-password').placeholder = 'patient123';
         document.getElementById('modalTitle').textContent = 'Add New Patient';
         document.getElementById('addPatientModal').style.display = 'flex';
         document.getElementById('modal-error').style.display = 'none';
@@ -549,6 +726,7 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
     function closeAddModal() { document.getElementById('addPatientModal').style.display = 'none'; }
 
     async function submitPatient() {
+        const editId = document.getElementById('inp-editId').value;
         const name = document.getElementById('inp-name').value.trim();
         const email = document.getElementById('inp-email').value.trim();
         const password = document.getElementById('inp-password').value;
@@ -559,24 +737,32 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
         errEl.style.display = 'none';
 
         if (!name) { errEl.textContent='Please enter a name.'; errEl.style.display='block'; return; }
-        if (!email) { errEl.textContent='Please enter an email.'; errEl.style.display='block'; return; }
-        if (!password) { errEl.textContent='Please set an initial password.'; errEl.style.display='block'; return; }
         if (!age || age < 1) { errEl.textContent='Enter a valid age.'; errEl.style.display='block'; return; }
 
         try {
-            const res = await apiFetch('/patient/add', {
-                method: 'POST',
-                body: JSON.stringify({
-                    p_name: name, email, password,
-                    age, gender, medical_history: condition || null
-                })
-            });
-            const data = await res.json();
-            if (!res.ok) { errEl.textContent = data.detail || 'Save failed'; errEl.style.display='block'; return; }
-
-            closeAddModal();
-            alert(`Patient added.\n\nPatient code: ${data.patient_code}\nPassword: ${password}\n\nShare these with the patient so they can sign in.`);
+            let res, data;
+            if (editId) {
+                res = await apiFetch('/patient/' + editId, {
+                    method: 'PUT',
+                    body: JSON.stringify({ p_name: name, age, gender, medical_history: condition || null })
+                });
+                data = await res.json();
+                if (!res.ok) { errEl.textContent = data.detail || 'Update failed'; errEl.style.display='block'; return; }
+                closeAddModal();
+            } else {
+                if (!email) { errEl.textContent='Please enter an email.'; errEl.style.display='block'; return; }
+                if (!password) { errEl.textContent='Please set an initial password.'; errEl.style.display='block'; return; }
+                res = await apiFetch('/patient/add', {
+                    method: 'POST',
+                    body: JSON.stringify({ p_name: name, email, password, age, gender, medical_history: condition || null })
+                });
+                data = await res.json();
+                if (!res.ok) { errEl.textContent = data.detail || 'Save failed'; errEl.style.display='block'; return; }
+                closeAddModal();
+                alert(`Patient added.\n\nPatient code: ${data.patient_code}\nPassword: ${password}\n\nShare these so the patient can sign in.`);
+            }
             await loadPatients();
+            renderAll();
             if (!document.getElementById('patients-page').classList.contains('active')) switchPage('patients');
         } catch (err) {
             errEl.textContent = 'Network error: ' + err.message; errEl.style.display='block';
@@ -604,7 +790,7 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
     let patientChartInstance = null;
 
     async function viewPatient(id) {
-        const p = patients.find(pt => pt.id === id);
+        const p = patients.find(pt => pt.id === Number(id));
         if (!p) return;
 
         const ini = getInitials(p.name);
@@ -696,8 +882,14 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
             window.location.href = '/app/Animated Login - MedAura AI.html';
             return;
         }
-        await loadCurrentDoctor();
-        await loadPatients();
+        try {
+            await loadCurrentDoctor();
+            await Promise.all([loadPatients(), loadAllDoctors(), loadAppointments()]);
+            renderAll();
+        } catch (err) {
+            console.error('Init failed:', err);
+            alert('Failed to load dashboard: ' + err.message + '\n\nCheck the server is running on ' + API_BASE);
+        }
     }
     init();
 </script>
