@@ -317,7 +317,9 @@ function togglePass(id, icon) {
     }
 }
 
-const API_BASE = "http://127.0.0.1:8000";
+// Empty base = call back to the same origin that served this page.
+// Works for both local dev (http://127.0.0.1:8000) and a public tunnel/domain.
+const API_BASE = "";
 
 async function handleLogin() {
     try {
@@ -355,7 +357,7 @@ async function handleLogin() {
             window.location.href = "/app/Doctor_Dashboard1.html";
         }
     } catch (err) {
-        alert("Could not reach the backend. Is the server running on " + API_BASE + "?");
+        alert("Could not reach the backend. Is the server running and reachable?");
     }
 }
 
@@ -392,7 +394,7 @@ async function handleRegister() {
         alert("Doctor registered successfully. Please sign in.");
         toggleForm();
     } catch (err) {
-        alert("Could not reach the backend. Is the server running on " + API_BASE + "?");
+        alert("Could not reach the backend. Is the server running and reachable?");
     }
 }
 </script>

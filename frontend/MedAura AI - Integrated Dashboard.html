@@ -809,7 +809,7 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
             const refCm = refInput && parseFloat(refInput.value) > 0 ? parseFloat(refInput.value) : 15;
             formData.append('reference_width_cm', String(refCm));
 
-            const response = await fetch('http://127.0.0.1:8000/wound/upload', {
+            const response = await fetch('/wound/upload', {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') },
                 body: formData
@@ -893,7 +893,8 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
     }
 
     // ===== Auth / logout =====
-    const API_BASE = "http://127.0.0.1:8000";
+    // Empty base = same origin as the page. Works locally and through a tunnel/domain.
+    const API_BASE = "";
     function getToken() { return localStorage.getItem("token"); }
     function logout() {
         localStorage.removeItem("token");

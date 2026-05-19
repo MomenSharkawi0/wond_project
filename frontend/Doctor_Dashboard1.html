@@ -380,7 +380,8 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
 </div>
 
 <script>
-    const API_BASE = "http://127.0.0.1:8000";
+    // Empty base = same origin as the page. Works locally and through a tunnel/domain.
+    const API_BASE = "";
     const avatarColors = ['av1','av2','av3','av4','av5','av6'];
     let patients = [];
     let currentDoctor = null;
@@ -987,7 +988,7 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
             renderAll();
         } catch (err) {
             console.error('Init failed:', err);
-            alert('Failed to load dashboard: ' + err.message + '\n\nCheck the server is running on ' + API_BASE);
+            alert('Failed to load dashboard: ' + err.message);
         }
     }
     init();
