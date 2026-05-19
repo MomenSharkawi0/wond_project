@@ -79,7 +79,7 @@ def patient_only(token: dict = Depends(verify_token), db: Session = Depends(get_
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied - patients only"
         )
-    
+
     user_id = token.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
@@ -87,5 +87,22 @@ def patient_only(token: dict = Depends(verify_token), db: Session = Depends(get_
     patient = db.query(Patient).filter(Patient.id == int(user_id)).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
-    
+
     return patient
+
+
+def current_user(token: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    """Returns (role, user_model) for any authenticated user — doctor or patient."""
+    role = token.get("role")
+    user_id = token.get("sub")
+    if not role or not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    if role == "doctor":
+        user = db.query(Doctor).filter(Doctor.id == int(user_id)).first()
+    elif role == "patient":
+        user = db.query(Patient).filter(Patient.id == int(user_id)).first()
+    else:
+        raise HTTPException(status_code=401, detail="Unknown role")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return (role, user)

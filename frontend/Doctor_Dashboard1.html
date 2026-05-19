@@ -338,6 +338,20 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
             <div style="display:flex;align-items:center;gap:12px;"><div id="vm-risk" style="font-size:28px;font-weight:700;"></div><div style="flex:1;background:rgba(255,255,255,0.08);height:6px;border-radius:6px;overflow:hidden;"><div id="vm-bar" style="height:100%;border-radius:6px;transition:width 0.8s ease;"></div></div></div>
         </div>
 
+        <!-- Latest AI Analysis (shown only right after a successful upload) -->
+        <div id="vm-latest" style="display:none;background:linear-gradient(135deg,rgba(168,85,247,0.08),rgba(255,75,145,0.05));border:1px solid rgba(168,85,247,0.3);border-radius:14px;padding:16px;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="font-size:11px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">🧠 Latest AI Analysis</div>
+                <span id="vm-latest-severity" class="badge"></span>
+            </div>
+            <img id="vm-latest-image" src="" alt="Wound segmentation overlay" style="width:100%;max-height:360px;object-fit:contain;border-radius:10px;background:#000;display:block;margin-bottom:12px;">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Risk</div><div id="vm-latest-risk" style="font-size:16px;font-weight:700;margin-top:4px;">—</div></div>
+                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Wound Area</div><div id="vm-latest-area" style="font-size:16px;font-weight:700;margin-top:4px;">—</div></div>
+                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Coverage</div><div id="vm-latest-coverage" style="font-size:16px;font-weight:700;margin-top:4px;">—</div></div>
+            </div>
+        </div>
+
         <!-- Patient Images History -->
         <div style="background:var(--card2);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:20px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -793,7 +807,13 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
     async function viewPatient(id) {
         const p = patients.find(pt => pt.id === Number(id));
         if (!p) return;
+        const isDifferentPatient = currentViewPatientId !== p.id;
         currentViewPatientId = p.id;
+        // Hide last analysis result when switching to a different patient
+        if (isDifferentPatient) {
+            const latestEl = document.getElementById('vm-latest');
+            if (latestEl) latestEl.style.display = 'none';
+        }
 
         const ini = getInitials(p.name);
         const barColor = p.risk >= 80 ? '#ff7b72' : p.risk >= 60 ? '#fb923c' : p.risk >= 40 ? '#facc15' : '#34d399';
@@ -867,7 +887,13 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
         }));
     }
 
-    function closePatientModal() { document.getElementById('patientModal').style.display = 'none'; if (patientChartInstance) { patientChartInstance.destroy(); patientChartInstance = null; } currentViewPatientId = null; }
+    function closePatientModal() {
+        document.getElementById('patientModal').style.display = 'none';
+        if (patientChartInstance) { patientChartInstance.destroy(); patientChartInstance = null; }
+        currentViewPatientId = null;
+        const latestEl = document.getElementById('vm-latest');
+        if (latestEl) latestEl.style.display = 'none';
+    }
 
     // Upload a wound image for the patient currently shown in the view modal
     function uploadWoundForCurrent() {
@@ -891,12 +917,22 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
                 const data = await res.json();
                 if (!res.ok) { alert('Upload failed: ' + (data.detail || res.status)); return; }
                 const seg = data.segmentation || {};
-                alert(`Analysis complete.\n\nSeverity: ${seg.severity || '—'}\nRisk: ${seg.risk_score || '—'}\nWound area: ${seg.area || '—'}\nCoverage: ${seg.coverage || '—'}`);
-                // Refresh patient list (risk was updated server-side) and re-open the modal with new data
+
+                // Refresh patient data (risk was updated server-side) and re-render
+                const reopenId = currentViewPatientId;
                 await loadPatients();
                 renderAll();
-                const reopenId = currentViewPatientId;
                 await viewPatient(reopenId);
+
+                // Show the AI mask + segmentation result inline at the top of the modal
+                const sevCls = seg.severity === 'Critical' ? 'b-critical' : seg.severity === 'High' ? 'b-high' : seg.severity === 'Medium' ? 'b-medium' : 'b-stable';
+                document.getElementById('vm-latest-severity').textContent = seg.severity || '—';
+                document.getElementById('vm-latest-severity').className = 'badge ' + sevCls;
+                document.getElementById('vm-latest-image').src = (data.mask_url || data.image_url) + '?t=' + Date.now();
+                document.getElementById('vm-latest-risk').textContent = seg.risk_score || '—';
+                document.getElementById('vm-latest-area').textContent = seg.area || '—';
+                document.getElementById('vm-latest-coverage').textContent = seg.coverage || '—';
+                document.getElementById('vm-latest').style.display = 'block';
             } catch (err) {
                 alert('Upload error: ' + err.message);
             }

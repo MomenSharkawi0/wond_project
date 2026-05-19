@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from db.database import SessionLocal
 from models.models import Patient, RiskHistory
-from core.auth import doctor_only
+from core.auth import current_user
 from core.ai_service import analyze_wound_image
 
 # Changed prefix to /wound to match your frontend API calls
@@ -24,18 +24,27 @@ def get_db():
 @router.post("/upload")
 async def upload_and_analyze_wound(
     file: UploadFile = File(...),
-    patient_id: int = Form(...), # Expecting patient_id from the frontend form data
+    patient_id: int = Form(...),
     db: Session = Depends(get_db),
-    current_doctor = Depends(doctor_only) # Ensuring only authenticated doctors can upload
+    user = Depends(current_user),
 ):
     """
-    Receives a wound image, saves it locally, analyzes it using the AI model,
-    and updates the patient's risk history in the database.
+    Receives a wound image, runs AI segmentation, persists a history row.
+    - Doctors may upload for any patient they own.
+    - Patients may only upload for themselves.
     """
-    # 1. Validate Patient
+    role, actor = user
+
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+
+    if role == "doctor":
+        if patient.doctor_id != actor.id:
+            raise HTTPException(status_code=403, detail="Patient is not assigned to you")
+    elif role == "patient":
+        if patient.id != actor.id:
+            raise HTTPException(status_code=403, detail="You can only analyze your own images")
 
     # 2. Save Image Locally with a unique name to prevent overwriting
     file_extension = file.filename.split(".")[-1] if "." in file.filename else "jpg"
