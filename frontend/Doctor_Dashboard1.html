@@ -187,8 +187,9 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
             <div class="nav-item" data-page="settings"><i class="fas fa-cog"></i> <span data-lang="nav_settings">Settings</span></div>
         </nav>
         <div class="sidebar-footer">
-            <div class="doc-avatar">DR</div>
-            <div><div class="doc-name">Dr. Ramy Hassan</div><div class="doc-spec">Wound Specialist</div></div>
+            <div class="doc-avatar" id="sideAvatar">DR</div>
+            <div style="flex:1;min-width:0;"><div class="doc-name" id="sideName">Loading…</div><div class="doc-spec" id="sideSpec">—</div></div>
+            <button onclick="logout()" title="Logout" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:0.2s;" onmouseover="this.style.borderColor='#ff7b72';this.style.color='#ff7b72'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </aside>
 
@@ -295,10 +296,11 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
         <input type="hidden" id="inp-editId">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
             <div style="grid-column:1/-1;"><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Full Name</label><input id="inp-name" type="text" placeholder="e.g. Ahmed Samy" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+            <div style="grid-column:1/-1;"><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Email</label><input id="inp-email" type="email" placeholder="patient@example.com" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+            <div style="grid-column:1/-1;"><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Initial Password</label><input id="inp-password" type="text" placeholder="patient123" value="patient123" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
             <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Age</label><input id="inp-age" type="number" placeholder="e.g. 45" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
             <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Gender</label><select id="inp-gender" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"><option value="Male">Male</option><option value="Female">Female</option></select></div>
-            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Condition</label><input id="inp-condition" type="text" placeholder="e.g. Diabetic Foot Ulcer" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
-            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Risk Level (%)</label><input id="inp-risk" type="number" placeholder="e.g. 75" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+            <div style="grid-column:1/-1;"><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Condition / Medical History</label><input id="inp-condition" type="text" placeholder="e.g. Diabetic Foot Ulcer" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
         </div>
         <div id="modal-error" style="display:none;color:#ff7b72;font-size:12px;margin-top:12px;padding:8px 12px;background:rgba(255,123,114,0.1);border-radius:8px;"></div>
         <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end;">
@@ -346,16 +348,74 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
 </div>
 
 <script>
+    const API_BASE = "http://127.0.0.1:8000";
     const avatarColors = ['av1','av2','av3','av4','av5','av6'];
-    let patients = [
-        { id:'P-10234', name:'Eleanor Vance',  gender:'Female', age:67, condition:'Diabetic Foot Ulcer', risk:84, lastVisit:'Apr 30', images: [{date: 'Apr 10', url: 'https://placehold.co/150x150/ff7b72/ffffff?text=Wound1'}, {date: 'Apr 20', url: 'https://placehold.co/150x150/fb923c/ffffff?text=Wound2'}, {date: 'Apr 30', url: 'https://placehold.co/150x150/facc15/ffffff?text=Wound3'}] },
-        { id:'P-10238', name:'Khaled Mostafa', gender:'Male',   age:60, condition:'Venous Ulcer',        risk:91, lastVisit:'Apr 29', images: [{date: 'Apr 15', url: 'https://placehold.co/150x150/ff7b72/ffffff?text=Wound1'}, {date: 'Apr 29', url: 'https://placehold.co/150x150/ff4b91/ffffff?text=Wound2'}] },
-        { id:'P-10235', name:'Mohamed Karim',  gender:'Male',   age:54, condition:'Pressure Ulcer',      risk:67, lastVisit:'Apr 30', images: [{date: 'Apr 25', url: 'https://placehold.co/150x150/fb923c/ffffff?text=Wound1'}] },
-        { id:'P-10236', name:'Sara Ahmed',     gender:'Female', age:42, condition:'Surgical Wound',      risk:45, lastVisit:'Apr 28', images: [] },
-        { id:'P-10237', name:'Hana Nabil',     gender:'Female', age:31, condition:'Burn Wound',          risk:22, lastVisit:'Apr 27', images: [{date: 'Apr 20', url: 'https://placehold.co/150x150/34d399/ffffff?text=Burn1'}, {date: 'Apr 27', url: 'https://placehold.co/150x150/60a5fa/ffffff?text=Burn2'}] },
-        { id:'P-10239', name:'Nour Samy',      gender:'Female', age:38, condition:'Post-op Wound',       risk:38, lastVisit:'Apr 26', images: [] },
-    ];
+    let patients = [];
+    let currentDoctor = null;
     let currentFilter = 'all';
+
+    function getToken() { return localStorage.getItem('token'); }
+    function authHeaders() { return { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' }; }
+
+    function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('selectedPatient');
+        window.location.href = '/app/Animated Login - MedAura AI.html';
+    }
+
+    async function apiFetch(path, options = {}) {
+        const opts = { ...options, headers: { ...authHeaders(), ...(options.headers || {}) } };
+        const res = await fetch(API_BASE + path, opts);
+        if (res.status === 401) { logout(); throw new Error('Session expired'); }
+        return res;
+    }
+
+    async function loadCurrentDoctor() {
+        try {
+            const res = await apiFetch('/doctor/me');
+            if (!res.ok) throw new Error('Could not load profile');
+            currentDoctor = await res.json();
+            // Update sidebar
+            const initials = currentDoctor.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+            document.getElementById('sideAvatar').textContent = initials;
+            document.getElementById('sideName').textContent = currentDoctor.name;
+            document.getElementById('sideSpec').textContent = currentDoctor.specialty || '';
+            // Update header greeting
+            const firstName = currentDoctor.name.replace(/^Dr\.?\s*/i, '').split(' ')[0];
+            const now = new Date();
+            const greet = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
+            document.getElementById('pageTitle').textContent = `${greet}, Dr. ${firstName} 👋`;
+            const dateStr = now.toLocaleDateString('en-US', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+            document.getElementById('pageSubtitle').textContent = dateStr;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function loadPatients() {
+        try {
+            const res = await apiFetch('/doctor/patients');
+            if (!res.ok) { patients = []; renderPatients(); return; }
+            const data = await res.json();
+            patients = data.map(p => ({
+                id: p.id,
+                patient_code: p.patient_code,
+                name: p.p_name,
+                gender: p.gender,
+                age: p.age,
+                condition: p.medical_history || 'Not specified',
+                risk: p.risk || 0,
+                lastVisit: '—',
+                images: []
+            }));
+            renderPatients();
+        } catch (err) {
+            console.error(err);
+            patients = [];
+            renderPatients();
+        }
+    }
 
     /* ====== Language System ====== */
     const translations = {
@@ -464,37 +524,63 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
     }
 
     function setFilter(btn, filter) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentFilter = filter; renderPatients(); }
-    function deletePatient(id) { if(confirm('Are you sure?')) { patients = patients.filter(p => p.id !== id); renderPatients(); } }
+
+    async function deletePatient(id) {
+        if (!confirm('Are you sure you want to delete this patient?')) return;
+        try {
+            const res = await apiFetch('/patient/delete/' + id, { method: 'DELETE' });
+            if (!res.ok) { const e = await res.json(); alert('Delete failed: ' + (e.detail || res.status)); return; }
+            await loadPatients();
+        } catch (err) { alert('Network error: ' + err.message); }
+    }
 
     function editPatient(id) {
-        const p = patients.find(p => p.id === id); if(!p) return;
-        document.getElementById('inp-editId').value = id; document.getElementById('inp-name').value = p.name;
-        document.getElementById('inp-age').value = p.age; document.getElementById('inp-gender').value = p.gender;
-        document.getElementById('inp-condition').value = p.condition; document.getElementById('inp-risk').value = p.risk;
-        document.getElementById('modalTitle').textContent = 'Edit Patient'; document.getElementById('addPatientModal').style.display = 'flex';
+        alert('Editing patients is not supported by the backend yet — you can update risk on the patient view page, or delete and re-add.');
     }
 
     function openAddModal() {
-        document.getElementById('inp-editId').value = ''; document.getElementById('modalTitle').textContent = 'Add New Patient';
-        document.getElementById('addPatientModal').style.display = 'flex'; document.getElementById('modal-error').style.display = 'none';
-        ['inp-name','inp-age','inp-condition','inp-risk'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('inp-editId').value = '';
+        document.getElementById('modalTitle').textContent = 'Add New Patient';
+        document.getElementById('addPatientModal').style.display = 'flex';
+        document.getElementById('modal-error').style.display = 'none';
+        ['inp-name','inp-email','inp-age','inp-condition'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('inp-password').value = 'patient123';
     }
     function closeAddModal() { document.getElementById('addPatientModal').style.display = 'none'; }
 
-    function submitPatient() {
-        const editId = document.getElementById('inp-editId').value; const name = document.getElementById('inp-name').value.trim();
-        const age = parseInt(document.getElementById('inp-age').value); const gender = document.getElementById('inp-gender').value;
-        const condition = document.getElementById('inp-condition').value.trim(); const risk = parseInt(document.getElementById('inp-risk').value);
+    async function submitPatient() {
+        const name = document.getElementById('inp-name').value.trim();
+        const email = document.getElementById('inp-email').value.trim();
+        const password = document.getElementById('inp-password').value;
+        const age = parseInt(document.getElementById('inp-age').value);
+        const gender = document.getElementById('inp-gender').value;
+        const condition = document.getElementById('inp-condition').value.trim();
         const errEl = document.getElementById('modal-error');
-        if (!name) { errEl.textContent='Please enter name.'; errEl.style.display='block'; return; }
-        if (!age || age < 1) { errEl.textContent='Enter valid age.'; errEl.style.display='block'; return; }
-        if (!condition) { errEl.textContent='Enter condition.'; errEl.style.display='block'; return; }
-        if (isNaN(risk) || risk < 0 || risk > 100) { errEl.textContent='Risk must be 0-100.'; errEl.style.display='block'; return; }
+        errEl.style.display = 'none';
 
-        if(editId) { const index = patients.findIndex(p => p.id === editId); if(index !== -1) patients[index] = { ...patients[index], name, age, gender, condition, risk }; }
-        else { const newId = 'P-' + (10240 + patients.length); const today = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }); patients.unshift({ id: newId, name, gender, age, condition, risk, lastVisit: today, images: [] }); }
-        closeAddModal(); renderPatients();
-        if (!document.getElementById('patients-page').classList.contains('active')) switchPage('patients');
+        if (!name) { errEl.textContent='Please enter a name.'; errEl.style.display='block'; return; }
+        if (!email) { errEl.textContent='Please enter an email.'; errEl.style.display='block'; return; }
+        if (!password) { errEl.textContent='Please set an initial password.'; errEl.style.display='block'; return; }
+        if (!age || age < 1) { errEl.textContent='Enter a valid age.'; errEl.style.display='block'; return; }
+
+        try {
+            const res = await apiFetch('/patient/add', {
+                method: 'POST',
+                body: JSON.stringify({
+                    p_name: name, email, password,
+                    age, gender, medical_history: condition || null
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) { errEl.textContent = data.detail || 'Save failed'; errEl.style.display='block'; return; }
+
+            closeAddModal();
+            alert(`Patient added.\n\nPatient code: ${data.patient_code}\nPassword: ${password}\n\nShare these with the patient so they can sign in.`);
+            await loadPatients();
+            if (!document.getElementById('patients-page').classList.contains('active')) switchPage('patients');
+        } catch (err) {
+            errEl.textContent = 'Network error: ' + err.message; errEl.style.display='block';
+        }
     }
 
     function switchPage(name) {
@@ -516,122 +602,83 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
 
     /* View Patient */
     let patientChartInstance = null;
-  function viewPatient(id) {
-    // 1. Find the specific patient object within the array using the passed ID
-    const p = patients.find(pt => pt.id === id); 
-    if (!p) return;
 
-    // 2. Extract basic design properties and colors based on risk level
-    const ini = getInitials(p.name); 
-    const barColor = p.risk >= 80 ? '#ff7b72' : p.risk >= 60 ? '#fb923c' : p.risk >= 40 ? '#facc15' : '#34d399';
-    const lvl = p.risk >= 80 ? 'b-critical' : p.risk >= 60 ? 'b-high' : p.risk >= 40 ? 'b-medium' : 'b-stable';
-    const lvlTxt = p.risk >= 80 ? 'Critical' : p.risk >= 60 ? 'High' : p.risk >= 40 ? 'Medium' : 'Stable';
+    async function viewPatient(id) {
+        const p = patients.find(pt => pt.id === id);
+        if (!p) return;
 
-    // 3. Populate the view modal UI components directly
-    if (document.getElementById('vm-avatar')) document.getElementById('vm-avatar').textContent = ini; 
-    if (document.getElementById('vm-name')) document.getElementById('vm-name').textContent = p.name;
-    if (document.getElementById('vm-meta')) document.getElementById('vm-meta').textContent = `ID: ${p.id} · Age ${p.age} · ${p.gender}`; 
-    if (document.getElementById('vm-condition')) document.getElementById('vm-condition').textContent = p.condition;
-    if (document.getElementById('vm-risk')) {
-        document.getElementById('vm-risk').textContent = p.risk + '%'; 
+        const ini = getInitials(p.name);
+        const barColor = p.risk >= 80 ? '#ff7b72' : p.risk >= 60 ? '#fb923c' : p.risk >= 40 ? '#facc15' : '#34d399';
+        const lvl = p.risk >= 80 ? 'b-critical' : p.risk >= 60 ? 'b-high' : p.risk >= 40 ? 'b-medium' : 'b-stable';
+        const lvlTxt = p.risk >= 80 ? 'Critical' : p.risk >= 60 ? 'High' : p.risk >= 40 ? 'Medium' : 'Stable';
+
+        document.getElementById('vm-avatar').textContent = ini;
+        document.getElementById('vm-name').textContent = p.name;
+        document.getElementById('vm-meta').textContent = `Code: ${p.patient_code} · Age ${p.age} · ${p.gender}`;
+        document.getElementById('vm-condition').textContent = p.condition;
+        document.getElementById('vm-risk').textContent = p.risk + '%';
         document.getElementById('vm-risk').style.color = barColor;
-    }
-    if (document.getElementById('vm-badge')) {
-        document.getElementById('vm-badge').textContent = lvlTxt; 
+        document.getElementById('vm-badge').textContent = lvlTxt;
         document.getElementById('vm-badge').className = 'badge ' + lvl;
-    }
-    if (document.getElementById('vm-bar')) {
-        document.getElementById('vm-bar').style.width = p.risk + '%'; 
+        document.getElementById('vm-bar').style.width = p.risk + '%';
         document.getElementById('vm-bar').style.background = `linear-gradient(90deg, ${barColor}, #a855f7)`;
+
+        // Fetch real risk history
+        let history = [];
+        try {
+            const res = await apiFetch('/patient/risk/history/' + p.id);
+            if (res.ok) history = await res.json();
+        } catch (e) { /* ignore */ }
+
+        document.getElementById('vm-visit').textContent = history.length > 0
+            ? new Date(history[history.length - 1].recorded_at).toLocaleDateString()
+            : 'No visits recorded';
+
+        const imgContainer = document.getElementById('vm-images');
+        const withImages = history.filter(h => h.image_path);
+        if (withImages.length > 0) {
+            imgContainer.innerHTML = withImages.map(h => `
+                <div class="img-history-item">
+                    <img src="${API_BASE}/${h.image_path}" alt="Wound scan">
+                    <div class="img-date">${new Date(h.recorded_at).toLocaleDateString()}</div>
+                </div>`).join('');
+        } else {
+            imgContainer.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:20px 0;">No images uploaded yet</div>`;
+        }
+
+        document.getElementById('patientModal').style.display = 'flex';
+        setTimeout(() => {
+            if (patientChartInstance) patientChartInstance.destroy();
+            const ctx = document.getElementById('patientChart').getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 150);
+            grad.addColorStop(0, `${barColor}55`);
+            grad.addColorStop(1, `${barColor}00`);
+
+            // Use real risk history if available, else flat line at current risk
+            const dataPoints = history.length > 0
+                ? history.slice(-7).map(h => h.risk)
+                : [p.risk, p.risk, p.risk, p.risk, p.risk, p.risk, p.risk];
+            const labels = history.length > 0
+                ? history.slice(-7).map(h => new Date(h.recorded_at).toLocaleDateString('en-US', {month:'short', day:'numeric'}))
+                : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+            patientChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets: [{ data: dataPoints, borderColor: barColor, borderWidth: 2.5, fill: true, backgroundColor: grad, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#f2edff', pointBorderColor: barColor, pointBorderWidth: 2 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min:0, max:100, grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#9f93c8',font:{size:10}} },
+                        x: { grid:{display:false}, ticks:{color:'#9f93c8',font:{size:10}} }
+                    } }
+            });
+        }, 50);
+
+        // Persist selection so the Integrated Dashboard can show wound-upload for this patient
+        localStorage.setItem('selectedPatient', JSON.stringify({
+            id: p.id, patient_code: p.patient_code, name: p.name, age: p.age, condition: p.condition
+        }));
     }
-    if (document.getElementById('vm-visit')) document.getElementById('vm-visit').textContent = 'Last Visit: ' + p.lastVisit;
 
-    // 4. Render historical progress images onto the container template safely
-    const imgContainer = document.getElementById('vm-images'); 
-    if (imgContainer) {
-        imgContainer.innerHTML = '';
-        if (p.images && p.images.length > 0) { 
-            p.images.forEach(img => { 
-                imgContainer.innerHTML += `
-                    <div class="img-history-item">
-                        <img src="${img.url}" alt="Wound on ${img.date}">
-                        <div class="img-date">${img.date}</div>
-                    </div>`; 
-            }); 
-        } else { 
-            imgContainer.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:20px 0;">No images uploaded yet</div>`; 
-        } 
-    }
-
-    // 5. PIPELINE INTEGRATION: Sanitize the patient ID for backend compatibility
-    // Strips out any 'P-' prefix to get a clean numeric ID for database lookup
-    const cleanerId = String(p.id).replace('P-', '');
-
-    // Save the structured patient details inside localStorage for the next page to read
-    localStorage.setItem('selectedPatient', JSON.stringify({ 
-        id: cleanerId, 
-        name: p.name, 
-        age: p.age,
-        condition: p.condition 
-    }));
-
-    // 6. Redirect seamlessly to the live AI Segmentation and Assessment layout
-    // Since the dashboard and integration files are at the same workspace layer, we call it directly
-    window.location.href = "MedAura AI - Integrated Dashboard.html";
-}
-
-    // 5. Instantly compile the tracking chart inside the timeout loop
-    document.getElementById('patientModal').style.display = 'flex';
-    setTimeout(() => {
-        if (patientChartInstance) patientChartInstance.destroy();
-        const ctx = document.getElementById('patientChart').getContext('2d');
-        const grad = ctx.createLinearGradient(0, 0, 0, 150); 
-        grad.addColorStop(0, `${barColor}55`); 
-        grad.addColorStop(1, `${barColor}00`);
-        
-        patientChartInstance = new Chart(ctx, {
-            type: 'line', 
-            data: { 
-                labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], 
-                datasets: [{ 
-                    data: [p.risk-5, p.risk-2, p.risk-3, p.risk+1, p.risk-1, p.risk, p.risk], 
-                    borderColor: barColor, 
-                    borderWidth: 2.5, 
-                    fill: true, 
-                    backgroundColor: grad, 
-                    tension: 0.4, 
-                    pointRadius: 4, 
-                    pointBackgroundColor: '#f2edff', 
-                    pointBorderColor: barColor, 
-                    pointBorderWidth: 2 
-                }] 
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: false } }, 
-                scales: { 
-                    y: { min:0, max:100, grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#9f93c8',font:{size:10}} }, 
-                    x: { grid:{display:false}, ticks:{color:'#9f93c8',font:{size:10}} } 
-                } 
-            }
-        });
-    }, 50);
-
-    // 6. PIPELINE INTEGRATION: Sanitize the structural patient code identifier
-    // Removes the string prefixes so the entity cleanly maps to integer data tables
-    const cleanerId = String(p.id).replace('P-', '');
-
-    localStorage.setItem('selectedPatient', JSON.stringify({ 
-        id: cleanerId, 
-        name: p.name, 
-        age: p.age,
-        condition: p.condition 
-    }));
-
-    // 7. Dynamic redirection directly into the complete AI Diagnostics layout
-    window.location.href = "MedAura AI - Integrated Dashboard.html";
-}
     function closePatientModal() { document.getElementById('patientModal').style.display = 'none'; if (patientChartInstance) { patientChartInstance.destroy(); patientChartInstance = null; } }
 
     /* Notifications & Settings */
@@ -641,7 +688,18 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
     function toggleDarkMode(input) { if(input.checked) { document.body.classList.remove('light-mode'); } else { document.body.classList.add('light-mode'); } }
     function toggleNotifsSetting(input) { const dot = document.getElementById('notifDot'); if(input.checked) { dot.style.display = 'block'; } else { dot.style.display = 'none'; } }
 
-    renderPatients();
+    /* ====== Bootstrap ====== */
+    async function init() {
+        const token = getToken();
+        const role = localStorage.getItem('role');
+        if (!token || role !== 'doctor') {
+            window.location.href = '/app/Animated Login - MedAura AI.html';
+            return;
+        }
+        await loadCurrentDoctor();
+        await loadPatients();
+    }
+    init();
 </script>
 </body>
 </html>

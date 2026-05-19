@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.database import SessionLocal
 from models.models import Patient, RiskHistory
-from schemas.schemas import PatientOut, RiskHistoryOut
+from schemas.schemas import PatientOut, RiskHistoryOut, DoctorOut
 from core.auth import doctor_only
 
 router = APIRouter(prefix="/doctor", tags=["doctor"])
@@ -13,6 +13,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# ===== Get current doctor profile =====
+@router.get("/me", response_model=DoctorOut)
+def get_my_profile(current_doctor=Depends(doctor_only)):
+    return current_doctor
 
 # ===== Get all patients =====
 @router.get("/patients", response_model=list[PatientOut])
