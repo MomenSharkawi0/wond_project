@@ -342,7 +342,7 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
         <div style="background:var(--card2);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:20px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                 <div style="font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;">Wound Progress Images</div>
-                <button style="background:transparent;border:1px solid var(--purple);color:var(--purple);font-size:10px;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:'Inter',sans-serif;">+ Upload New</button>
+                <button onclick="uploadWoundForCurrent()" style="background:transparent;border:1px solid var(--purple);color:var(--purple);font-size:10px;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:'Inter',sans-serif;">+ Upload & Analyze</button>
             </div>
             <div class="img-history-grid" id="vm-images"></div>
         </div>
@@ -788,10 +788,12 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
 
     /* View Patient */
     let patientChartInstance = null;
+    let currentViewPatientId = null;
 
     async function viewPatient(id) {
         const p = patients.find(pt => pt.id === Number(id));
         if (!p) return;
+        currentViewPatientId = p.id;
 
         const ini = getInitials(p.name);
         const barColor = p.risk >= 80 ? '#ff7b72' : p.risk >= 60 ? '#fb923c' : p.risk >= 40 ? '#facc15' : '#34d399';
@@ -865,7 +867,41 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
         }));
     }
 
-    function closePatientModal() { document.getElementById('patientModal').style.display = 'none'; if (patientChartInstance) { patientChartInstance.destroy(); patientChartInstance = null; } }
+    function closePatientModal() { document.getElementById('patientModal').style.display = 'none'; if (patientChartInstance) { patientChartInstance.destroy(); patientChartInstance = null; } currentViewPatientId = null; }
+
+    // Upload a wound image for the patient currently shown in the view modal
+    function uploadWoundForCurrent() {
+        if (!currentViewPatientId) { alert('No patient selected.'); return; }
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('patient_id', currentViewPatientId);
+            try {
+                const res = await fetch(API_BASE + '/wound/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken() },
+                    body: fd
+                });
+                if (res.status === 401) { logout(); return; }
+                const data = await res.json();
+                if (!res.ok) { alert('Upload failed: ' + (data.detail || res.status)); return; }
+                const seg = data.segmentation || {};
+                alert(`Analysis complete.\n\nSeverity: ${seg.severity || '—'}\nRisk: ${seg.risk_score || '—'}\nArea: ${seg.area || '—'}`);
+                // Refresh patient list (risk was updated server-side) and re-open the modal with new data
+                await loadPatients();
+                renderAll();
+                await viewPatient(currentViewPatientId);
+            } catch (err) {
+                alert('Upload error: ' + err.message);
+            }
+        };
+        input.click();
+    }
 
     /* Notifications & Settings */
     function toggleNotifDropdown() { document.getElementById('notifDropdown').classList.toggle('show'); }
