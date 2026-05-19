@@ -49,3 +49,8 @@ unet_model.h5
 *.zip
 *.7z
 *.tar.gz
+
+# Local-only server management script and its state/logs (not for git)
+server_ctl.py
+.server_state.json
+.server_logs/
