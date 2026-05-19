@@ -440,6 +440,16 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
 
                     <div class="card">
                         <span class="card-label">Wound Segmentation</span>
+                        <div id="scanCompare" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                            <div>
+                                <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;text-align:center;">Before</div>
+                                <img id="scanBefore" src="" style="width:100%;height:160px;object-fit:contain;border-radius:10px;background:#000;display:block;">
+                            </div>
+                            <div>
+                                <div style="font-size:9px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;text-align:center;font-weight:700;">After (AI mask)</div>
+                                <img id="scanAfter" src="" style="width:100%;height:160px;object-fit:contain;border-radius:10px;background:#000;display:block;">
+                            </div>
+                        </div>
                         <div class="scan-box" id="scanBox">
                             <div class="laser"></div>
                             <span id="scanStatus">Waiting for image...</span>
@@ -575,6 +585,11 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
 <!-- CAMERA MODAL -->
 <div id="cameraModal">
     <video id="video" autoplay></video>
+    <div style="position:absolute;top:24px;left:50%;transform:translateX(-50%);background:rgba(20,15,40,0.85);backdrop-filter:blur(10px);border:1px solid rgba(168,85,247,0.4);border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:10px;z-index:10;">
+        <label style="font-size:11px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Photo width:</label>
+        <input id="refCmInput" type="number" min="1" max="200" step="0.5" value="15" style="width:70px;background:rgba(255,255,255,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;outline:none;text-align:center;">
+        <span style="font-size:13px;color:#f0ebff;">cm</span>
+    </div>
     <div class="modal-btns">
         <button class="btn-capture" onclick="captureImage()"><i class="fas fa-camera"></i> Capture</button>
         <button class="btn-upload"  onclick="uploadImage()"><i class="fas fa-upload"></i> Upload</button>
@@ -716,15 +731,15 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
         const content = document.getElementById('segmentationContent');
         if (!box || !content) return;
         let html = '';
-        if (data.area)     html += `<div>📐 <b>Wound Area:</b> ${data.area}</div>`;
-        if (data.type)     html += `<div>🩹 <b>Type:</b> ${data.type}</div>`;
-        if (data.severity) html += `<div>⚠️ <b>Severity:</b> ${data.severity}</div>`;
-        if (data.coverage) html += `<div>📊 <b>Coverage:</b> ${data.coverage}</div>`;
-        // أي field تاني من الـ database
-        Object.keys(data).forEach(k => {
-            if (!['area','type','severity','coverage'].includes(k))
-                html += `<div>• <b>${k}:</b> ${data[k]}</div>`;
-        });
+        if (data.severity)    html += `<div>⚠️ <b>Severity:</b> ${data.severity}</div>`;
+        if (data.risk_score)  html += `<div>📈 <b>Risk Score:</b> ${data.risk_score}</div>`;
+        if (data.diameter_cm) html += `<div>📏 <b>Wound Diameter:</b> ${data.diameter_cm}</div>`;
+        if (data.area_cm2)    html += `<div>📐 <b>Wound Area:</b> ${data.area_cm2}</div>`;
+        if (data.coverage)    html += `<div>📊 <b>Coverage:</b> ${data.coverage}</div>`;
+        if (data.type)        html += `<div>🩹 <b>Type:</b> ${data.type}</div>`;
+        if (data.reference_width_cm) {
+            html += `<div style="margin-top:8px;font-size:10px;color:var(--muted);font-style:italic;">Scale: photo width ≈ ${data.reference_width_cm}</div>`;
+        }
         content.innerHTML = html;
         box.style.display = 'block';
     }
@@ -789,6 +804,10 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
             }
 
             if (patientId) formData.append('patient_id', patientId);
+            // Include cm reference from the input on the camera modal (default 15)
+            const refInput = document.getElementById('refCmInput');
+            const refCm = refInput && parseFloat(refInput.value) > 0 ? parseFloat(refInput.value) : 15;
+            formData.append('reference_width_cm', String(refCm));
 
             const response = await fetch('http://127.0.0.1:8000/wound/upload', {
                 method: 'POST',
@@ -796,18 +815,19 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
                 body: formData
             });
 
-            if (!response.ok) throw new Error('Upload failed: ' + response.status);
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.detail || ('Upload failed: ' + response.status));
+            }
 
             const data = await response.json();
 
-            // Prefer the AI-annotated mask image over the raw upload
-            const displayUrl = data.mask_url || data.image_url;
-            const scanBox = document.getElementById('scanBox');
-            scanBox.innerHTML = '';
-            const img = document.createElement('img');
-            img.src = displayUrl;
-            img.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:12px;background:#000;';
-            scanBox.appendChild(img);
+            // Show BEFORE + AFTER side by side in the Wound Segmentation card
+            const ts = '?t=' + Date.now();
+            document.getElementById('scanBox').style.display = 'none';
+            document.getElementById('scanCompare').style.display = 'grid';
+            document.getElementById('scanBefore').src = data.image_url + ts;
+            document.getElementById('scanAfter').src = (data.mask_url || data.image_url) + ts;
 
             if (data.segmentation) showSegmentationResult(data.segmentation);
 
@@ -815,7 +835,7 @@ video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-ra
 
         } catch (err) {
             console.error('Upload error:', err);
-            if (scanStatus) scanStatus.textContent = 'Upload failed. Try again.';
+            if (scanStatus) scanStatus.textContent = 'Upload failed: ' + err.message;
         }
     }
 

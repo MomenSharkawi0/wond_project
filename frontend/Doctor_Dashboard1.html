@@ -344,12 +344,23 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
                 <div style="font-size:11px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">🧠 Latest AI Analysis</div>
                 <span id="vm-latest-severity" class="badge"></span>
             </div>
-            <img id="vm-latest-image" src="" alt="Wound segmentation overlay" style="width:100%;max-height:360px;object-fit:contain;border-radius:10px;background:#000;display:block;margin-bottom:12px;">
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Risk</div><div id="vm-latest-risk" style="font-size:16px;font-weight:700;margin-top:4px;">—</div></div>
-                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Wound Area</div><div id="vm-latest-area" style="font-size:16px;font-weight:700;margin-top:4px;">—</div></div>
-                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Coverage</div><div id="vm-latest-coverage" style="font-size:16px;font-weight:700;margin-top:4px;">—</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                <div>
+                    <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;text-align:center;">Before</div>
+                    <img id="vm-latest-before" src="" alt="Original" style="width:100%;height:240px;object-fit:contain;border-radius:10px;background:#000;display:block;">
+                </div>
+                <div>
+                    <div style="font-size:9px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;text-align:center;font-weight:600;">After (AI mask)</div>
+                    <img id="vm-latest-after" src="" alt="Segmentation overlay" style="width:100%;height:240px;object-fit:contain;border-radius:10px;background:#000;display:block;">
+                </div>
             </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Risk</div><div id="vm-latest-risk" style="font-size:15px;font-weight:700;margin-top:4px;">—</div></div>
+                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Diameter</div><div id="vm-latest-diameter" style="font-size:15px;font-weight:700;margin-top:4px;">—</div></div>
+                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Area</div><div id="vm-latest-area" style="font-size:15px;font-weight:700;margin-top:4px;">—</div></div>
+                <div style="background:var(--card2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Coverage</div><div id="vm-latest-coverage" style="font-size:15px;font-weight:700;margin-top:4px;">—</div></div>
+            </div>
+            <div id="vm-latest-scale" style="font-size:10px;color:var(--muted);margin-top:10px;text-align:center;font-style:italic;">Measurements assume photo width ≈ — cm</div>
         </div>
 
         <!-- Patient Images History -->
@@ -898,6 +909,16 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
     // Upload a wound image for the patient currently shown in the view modal
     function uploadWoundForCurrent() {
         if (!currentViewPatientId) { alert('No patient selected.'); return; }
+        const refStr = prompt(
+            'Approximate width of the photo subject in centimeters?\n\n' +
+            'Examples:\n  • Finger close-up ≈ 3 cm\n  • Forearm shot ≈ 10 cm\n  • Full hand ≈ 20 cm\n  • Whole limb ≈ 40 cm\n\n' +
+            'This is needed to convert pixels to cm.',
+            '15'
+        );
+        if (!refStr) return;
+        const refCm = parseFloat(refStr);
+        if (isNaN(refCm) || refCm <= 0) { alert('Please enter a positive number.'); return; }
+
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -907,6 +928,7 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
             const fd = new FormData();
             fd.append('file', file);
             fd.append('patient_id', currentViewPatientId);
+            fd.append('reference_width_cm', String(refCm));
             try {
                 const res = await fetch(API_BASE + '/wound/upload', {
                     method: 'POST',
@@ -924,14 +946,18 @@ html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
                 renderAll();
                 await viewPatient(reopenId);
 
-                // Show the AI mask + segmentation result inline at the top of the modal
+                // Show before/after + measurements inline at the top of the modal
                 const sevCls = seg.severity === 'Critical' ? 'b-critical' : seg.severity === 'High' ? 'b-high' : seg.severity === 'Medium' ? 'b-medium' : 'b-stable';
                 document.getElementById('vm-latest-severity').textContent = seg.severity || '—';
                 document.getElementById('vm-latest-severity').className = 'badge ' + sevCls;
-                document.getElementById('vm-latest-image').src = (data.mask_url || data.image_url) + '?t=' + Date.now();
+                const ts = '?t=' + Date.now();
+                document.getElementById('vm-latest-before').src = data.image_url + ts;
+                document.getElementById('vm-latest-after').src = (data.mask_url || data.image_url) + ts;
                 document.getElementById('vm-latest-risk').textContent = seg.risk_score || '—';
-                document.getElementById('vm-latest-area').textContent = seg.area || '—';
+                document.getElementById('vm-latest-diameter').textContent = seg.diameter_cm || '—';
+                document.getElementById('vm-latest-area').textContent = seg.area_cm2 || '—';
                 document.getElementById('vm-latest-coverage').textContent = seg.coverage || '—';
+                document.getElementById('vm-latest-scale').textContent = `Measurements assume photo width ≈ ${seg.reference_width_cm || (refCm + ' cm')}`;
                 document.getElementById('vm-latest').style.display = 'block';
             } catch (err) {
                 alert('Upload error: ' + err.message);

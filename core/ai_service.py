@@ -104,9 +104,14 @@ def _render_overlay(img_rgb: np.ndarray, wound_mask: np.ndarray, contour) -> np.
     return overlay
 
 
-def analyze_wound_image(image_bytes: bytes, upload_dir: str = "uploads") -> dict:
+def analyze_wound_image(image_bytes: bytes, upload_dir: str = "uploads", reference_width_cm: float = 15.0) -> dict:
     """
-    Returns: { risk_score, wound_area_pixels, coverage, severity, mask_path }
+    reference_width_cm: real-world width that the full image frame represents.
+        Used to convert pixel measurements to cm. 15 cm is a reasonable default
+        for a smartphone photo of a limb at arm's length.
+
+    Returns: { risk_score, wound_area_pixels, wound_area_cm2, wound_diameter_cm,
+               coverage, severity, mask_path, reference_width_cm }
     """
     try:
         pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -145,10 +150,18 @@ def analyze_wound_image(image_bytes: bytes, upload_dir: str = "uploads") -> dict
     mask_path = os.path.join(upload_dir, mask_filename).replace("\\", "/")
     cv2.imwrite(mask_path, overlay)
 
+    # Convert pixel measurements to cm using the user-supplied reference.
+    cm_per_pixel = (reference_width_cm / w) if w > 0 else 0.0
+    wound_area_cm2 = wound_pixels * (cm_per_pixel ** 2)
+    wound_diameter_cm = 2.0 * (wound_area_cm2 / np.pi) ** 0.5 if wound_area_cm2 > 0 else 0.0
+
     return {
         "risk_score": risk_score,
         "wound_area_pixels": float(wound_pixels),
+        "wound_area_cm2": round(wound_area_cm2, 2),
+        "wound_diameter_cm": round(wound_diameter_cm, 2),
         "coverage": round(coverage, 4),
         "severity": _classify(risk_score),
         "mask_path": mask_path,
+        "reference_width_cm": reference_width_cm,
     }

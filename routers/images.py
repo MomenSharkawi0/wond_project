@@ -25,6 +25,7 @@ def get_db():
 async def upload_and_analyze_wound(
     file: UploadFile = File(...),
     patient_id: int = Form(...),
+    reference_width_cm: float = Form(15.0),
     db: Session = Depends(get_db),
     user = Depends(current_user),
 ):
@@ -58,7 +59,11 @@ async def upload_and_analyze_wound(
 
     # 3. Run wound segmentation + risk scoring
     try:
-        ai_result = analyze_wound_image(image_bytes, upload_dir=UPLOAD_DIR)
+        ai_result = analyze_wound_image(
+            image_bytes,
+            upload_dir=UPLOAD_DIR,
+            reference_width_cm=max(1.0, reference_width_cm),
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Analysis failed: {str(e)}")
 
@@ -67,6 +72,8 @@ async def upload_and_analyze_wound(
     wound_area = ai_result["wound_area_pixels"]
     coverage = ai_result["coverage"]
     mask_path = ai_result.get("mask_path")
+    wound_area_cm2 = ai_result.get("wound_area_cm2", 0.0)
+    wound_diameter_cm = ai_result.get("wound_diameter_cm", 0.0)
 
     # 4. Persist — store the overlay (annotated) image in history so the
     # doctor sees the AI's segmentation, not the raw photo.
@@ -86,8 +93,11 @@ async def upload_and_analyze_wound(
         "segmentation": {
             "severity": severity,
             "risk_score": f"{risk_score}%",
-            "area": f"{int(wound_area)} pixels",
+            "area_pixels": f"{int(wound_area)} px",
+            "area_cm2": f"{wound_area_cm2:.2f} cm²",
+            "diameter_cm": f"{wound_diameter_cm:.2f} cm",
             "coverage": f"{coverage * 100:.2f}%",
+            "reference_width_cm": f"{reference_width_cm:.1f} cm",
             "type": patient.medical_history or "Unspecified Wound",
         },
     }
