@@ -43,3 +43,9 @@ unet_model.h5
 
 # Logs
 *.log
+
+# Archives — should never be in the repo (clone the source instead)
+*.rar
+*.zip
+*.7z
+*.tar.gz
