@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MedAura AI - Integrated Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+:root {
+    --bg:     #0e0b1a;
+    --side:   #13102280;
+    --card:   #1a1330;
+    --card2:  #221940;
+    --border: #2d2252;
+    --accent: #ff4b91;
+    --purple: #a855f7;
+    --text:   #f0ebff;
+    --muted:  #9080bb;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(168,85,247,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(255,75,145,0.06) 0%, transparent 60%);
+    color: var(--text); height: 100vh; overflow: hidden;
+}
+
+.app { display: flex; height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+    width: 220px; flex-shrink: 0;
+    background: rgba(19,16,34,0.95);
+    border-right: 1px solid rgba(168,85,247,0.12);
+    display: flex; flex-direction: column;
+    backdrop-filter: blur(20px);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+}
+.logo {
+    padding: 22px 22px 18px;
+    color: var(--accent); font-weight: 700; font-size: 15px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(168,85,247,0.12);
+    background: linear-gradient(135deg, rgba(255,75,145,0.05), rgba(168,85,247,0.05));
+}
+.logo i { font-size: 18px; filter: drop-shadow(0 0 6px rgba(255,75,145,0.5)); }
+.nav { flex: 1; padding: 14px 0; }
+.nav-item {
+    padding: 11px 22px; color: var(--muted); font-size: 13px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer;
+    border-left: 3px solid transparent; transition: all 0.2s;
+    position: relative; overflow: hidden;
+}
+.nav-item::after {
+    content: ""; position: absolute; left: -100%; top: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,75,145,0.08), transparent);
+    transition: 0.5s;
+}
+.nav-item:hover::after { left: 100%; }
+.nav-item:hover { color: #fff; background: rgba(255,75,145,0.05); transform: translateX(3px); border-left-color: rgba(255,75,145,0.3); }
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(255,75,145,0.12), rgba(168,85,247,0.06));
+    color: #fff; border-left-color: var(--accent);
+    box-shadow: inset 0 0 20px rgba(255,75,145,0.05);
+}
+.nav-item.active i, .nav-item:hover i { color: var(--accent); }
+.sidebar-footer {
+    padding: 16px 22px; border-top: 1px solid rgba(168,85,247,0.12);
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(168,85,247,0.03);
+}
+.doc-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(168,85,247,0.35);
+}
+.doc-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.doc-spec { font-size: 10px; color: var(--muted); }
+
+/* MAIN */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px; background: rgba(14,11,26,0.85);
+    border-bottom: 1px solid rgba(168,85,247,0.12); backdrop-filter: blur(20px);
+    flex-shrink: 0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+.topbar-left h2 { font-size: 17px; font-weight: 700; }
+.topbar-left p  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+.search {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    border-radius: 50px; padding: 7px 16px;
+    display: flex; align-items: center; gap: 8px; width: 220px; transition: 0.3s;
+}
+.search:focus-within { border-color: var(--purple); width: 270px; }
+.search input { background: none; border: none; color: var(--text); outline: none; font-size: 12px; width: 100%; }
+.search input::placeholder { color: var(--muted); }
+.search i { color: var(--muted); font-size: 12px; }
+.notif-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; transition: 0.2s;
+}
+.notif-btn:hover { border-color: var(--purple); }
+.notif-btn i { color: var(--muted); font-size: 14px; }
+.notif-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 6px var(--accent); }
+
+/* CONTENT */
+.content { flex: 1; overflow-y: auto; padding: 22px 28px; }
+.page { display: none; }
+.page.active { display: block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* CARD LABEL & TITLE */
+.card-label {
+    font-size: 10px; color: #c2a8ff; text-transform: uppercase;
+    letter-spacing: 1.5px; font-weight: 700; display: block; margin-bottom: 14px;
+    opacity: 0.85;
+}
+.card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+
+/* CARD */
+.card {
+    background: linear-gradient(145deg, rgba(30,22,55,0.9), rgba(26,19,48,0.95));
+    border: 1px solid rgba(168,85,247,0.15);
+    border-radius: 20px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168,85,247,0.3), transparent);
+}
+.card:hover {
+    border-color: rgba(168,85,247,0.35);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(168,85,247,0.15), 0 4px 20px rgba(0,0,0,0.3);
+    cursor: pointer;
+}
+/* DASHBOARD GRID */
+.dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.span2 { grid-column: span 2; }
+
+/* PATIENT PROFILE CARD */
+.p-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.p-img { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--purple); }
+.p-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.p-id   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.h-item {
+    padding: 9px 13px;
+    background: rgba(36,27,61,0.6);
+    border-radius: 10px; border-left: 3px solid var(--border);
+    font-size: 12px; color: var(--text);
+    border: 1px solid rgba(168,85,247,0.08);
+    border-left: 3px solid var(--border);
+    transition: 0.2s;
+}
+.h-item:hover { border-color: rgba(168,85,247,0.2); border-left-color: var(--purple); }
+.h-item small { color: var(--muted); font-size: 10px; display: block; margin-top: 2px; }
+.h-item.accent { border-left-color: var(--accent); }
+.h-item.purple { border-left-color: var(--purple); }
+
+/* UPLOAD CARD */
+.drop-zone {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 36px 20px; text-align: center; cursor: pointer; transition: 0.3s;
+}
+.drop-zone:hover { border-color: var(--purple); background: rgba(168,85,247,0.05); }
+.drop-zone i { font-size: 28px; color: var(--purple); margin-bottom: 10px; display: block; }
+.drop-zone p { font-size: 13px; color: var(--muted); }
+.drop-zone strong { color: var(--text); }
+
+/* SCAN / SEGMENTATION */
+.scan-box {
+    position: relative; background: rgba(0,0,0,0.3);
+    border-radius: 12px; min-height: 100px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; border: 1px solid var(--border);
+}
+.scan-box img { max-width: 100%; max-height: 130px; border-radius: 8px; object-fit: cover; }
+#scanStatus { font-size: 12px; color: var(--muted); }
+.laser {
+    position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--purple), var(--accent), var(--purple), transparent);
+    box-shadow: 0 0 12px var(--purple), 0 0 4px var(--accent);
+    animation: scanning 2.5s infinite ease-in-out;
+}
+@keyframes scanning { 0%{top:0} 50%{top:100%} 100%{top:0} }
+
+/* RISK CARD */
+.risk-value {
+    font-size: 42px; font-weight: 700; color: #ff7b72; line-height: 1.1; margin-bottom: 8px;
+    text-shadow: 0 0 20px rgba(255,123,114,0.4);
+}
+.risk-value .status {
+    font-size: 11px; font-weight: 700; padding: 4px 10px;
+    background: rgba(255,123,114,0.12); color: #ff7b72;
+    border-radius: 20px; vertical-align: middle; margin-left: 8px;
+    border: 1px solid rgba(255,123,114,0.25);
+    letter-spacing: 0.5px;
+}
+.risk-stage { font-size: 11px; color: var(--muted); margin-top: 8px; letter-spacing: 0.2px; }
+
+/* CHART */
+.chart-wrap { height: 160px; position: relative; }
+
+/* BADGE */
+.badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+.b-critical { background: rgba(255,123,114,0.15); color: #ff7b72; }
+.b-high     { background: rgba(251,146,60,0.15);  color: #fb923c; }
+.b-medium   { background: rgba(250,204,21,0.15);  color: #facc15; }
+.b-stable   { background: rgba(52,211,153,0.15);  color: #34d399; }
+.b-low      { background: rgba(96,165,250,0.15);  color: #60a5fa; }
+
+/* MODEL ITEMS */
+.model-item {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: 0.2s;
+}
+.model-item:hover { border-color: rgba(168,85,247,0.4); }
+.model-item.active-model { border-color: var(--purple); }
+.model-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.model-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* CAMERA MODAL */
+#cameraModal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 9999;
+    flex-direction: column; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+}
+video { width: 90%; max-width: 480px; border: 2px solid var(--purple); border-radius: 16px; }
+.modal-btns { margin-top: 18px; display: flex; gap: 10px; }
+.modal-btns button {
+    padding: 10px 24px; border: none; border-radius: 50px;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 600; transition: 0.2s;
+}
+.btn-capture { background: var(--purple); color: white; }
+.btn-capture:hover { background: #9333ea; }
+.btn-upload  { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+.btn-upload:hover { border-color: var(--purple); color: var(--purple); }
+.btn-close   { background: rgba(255,123,114,0.15); color: #ff7b72; border: 1px solid rgba(255,123,114,0.3); }
+.btn-close:hover { background: rgba(255,123,114,0.25); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+
+/* SETTINGS */
+.pref-item {
+    background: var(--card2); border-radius: 12px; padding: 13px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; border: 1px solid transparent; transition: 0.2s;
+}
+.pref-item.clickable { border-color: var(--purple); color: var(--purple); cursor: pointer; }
+.pref-item.clickable:hover { background: rgba(168,85,247,0.1); }
+
+/* TOGGLE SWITCH */
+.toggle-wrap { display: flex; align-items: center; gap: 8px; }
+.toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+    position: absolute; inset: 0; border-radius: 24px;
+    background: var(--border); cursor: pointer; transition: 0.3s;
+}
+.toggle-slider::before {
+    content: ""; position: absolute;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--muted); left: 3px; top: 3px; transition: 0.3s;
+}
+.toggle input:checked + .toggle-slider { background: rgba(192,168,255,0.15); border: 1px solid #c0a8ff; }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: linear-gradient(135deg, #c0a8ff, #a78bfa); box-shadow: 0 0 10px rgba(167,139,250,0.4); }
+.toggle-label { font-size: 11px; font-weight: 600; color: var(--muted); min-width: 26px; letter-spacing: 0.3px; }
+.toggle input:checked ~ .toggle-label { color: #c0a8ff; }
+
+/* LANGUAGE SELECT */
+.lang-select {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 10px; color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 12px; cursor: pointer;
+    outline: none; transition: 0.2s;
+}
+.lang-select:focus { border-color: var(--purple); }
+.lang-select option { background: var(--card2); }
+
+/* ── ACTION BUTTONS CARD ── */
+.action-card-label {
+    font-size: 10px; color: #c2a8ff; text-transform: uppercase;
+    letter-spacing: 1.2px; font-weight: 700; display: block; margin-bottom: 16px;
+}
+.action-divider {
+    height: 1px; background: var(--border); margin: 14px 0;
+}
+.action-btn-group {
+    display: flex; flex-direction: column; gap: 6px;
+}
+.action-btn-top-row {
+    display: flex; flex-direction: row; gap: 6px;
+}
+.action-btn {
+    width: 100%; padding: 10px 12px;
+    border: none; border-radius: 10px;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.2s ease; position: relative; overflow: hidden; white-space: nowrap;
+}
+.action-btn::after {
+    content: ""; position: absolute; left: -100%; top: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    transition: 0.5s;
+}
+.action-btn:hover::after { left: 100%; }
+
+/* Analyze — purple accent */
+.action-btn-analyze {
+    background: rgba(168,85,247,0.15);
+    border: 1px solid rgba(168,85,247,0.35);
+    color: var(--purple);
+}
+.action-btn-analyze:hover {
+    background: rgba(168,85,247,0.25);
+    border-color: var(--purple);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(168,85,247,0.2);
+}
+.action-btn-analyze:active { transform: translateY(0); }
+
+/* Upload — pink accent */
+.action-btn-upload {
+    background: rgba(255,75,145,0.12);
+    border: 1px solid rgba(255,75,145,0.3);
+    color: var(--accent);
+}
+.action-btn-upload:hover {
+    background: rgba(255,75,145,0.22);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(255,75,145,0.18);
+}
+.action-btn-upload:active { transform: translateY(0); }
+
+/* Close — subtle muted */
+.action-btn-close-card {
+    background: rgba(47,37,80,0.6);
+    border: 1px solid var(--border);
+    color: var(--muted);
+}
+.action-btn-close-card:hover {
+    background: rgba(255,123,114,0.1);
+    border-color: rgba(255,123,114,0.3);
+    color: #ff7b72;
+    transform: translateY(-1px);
+}
+.action-btn-close-card:active { transform: translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo"><i class="fas fa-wave-square"></i> MedAura AI</div>
+        <nav class="nav">
+            <div class="nav-item active" data-page="dashboard"><i class="fas fa-th-large"></i> Dashboard</div>
+            <div class="nav-item" data-page="wound-ai"><i class="fas fa-brain"></i> Wound AI</div>
+            <div class="nav-item" data-page="analytics"><i class="fas fa-chart-line"></i> Analytics</div>
+            <div class="nav-item" data-page="settings"><i class="fas fa-cog"></i> Settings</div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="doc-avatar">AR</div>
+            <div>
+                <div class="doc-name">Arthur Morgan</div>
+                <div class="doc-spec">Patient</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+        <header class="topbar">
+            <div class="topbar-left">
+                <h2 id="pageTitle">Wound AI Assessment</h2>
+                <p id="pageSubtitle">Patient: Eleanor Vance · P-10234 · Age 67</p>
+            </div>
+            <div class="topbar-right">
+                <div class="search"><i class="fas fa-search"></i><input type="text" placeholder="Search..."></div>
+                <div class="notif-btn"><i class="fas fa-bell"></i><div class="notif-dot"></div></div>
+            </div>
+        </header>
+
+        <div class="content">
+
+            <!-- DASHBOARD PAGE -->
+            <div id="dashboard-page" class="page active">
+                <div class="dashboard-grid">
+
+                    <!-- Row 1: Patient Profile / Upload / Segmentation -->
+                    <div class="card">
+                        <span class="card-label">Patient Profile</span><br><br>
+                        <div class="p-header">
+                            <div class="p-img" style="background:linear-gradient(135deg,#ff4b91,#a855f7);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;border:none;flex-shrink:0;">EV</div>
+                            <div>
+                                <div class="p-name">Eleanor Vance</div>
+                                <div class="p-id">ID: P-10234 · Age 67</div>
+                            </div>
+                        </div>
+                        <div class="history-list">
+                            <div class="h-item purple">Diabetes II <small>12 Mon · July 2023</small></div>
+                            <div class="h-item purple">Hypertension <small>8 Mon · Nov 2023</small></div>
+                            <div class="h-item accent">Ulcer 2023 <small>Medical Timeline</small></div>
+                        </div>
+                    </div>
+
+                    <div class="card" id="uploadCard" onclick="openCamera()" style="cursor:pointer;">
+                        <span class="card-label">Upload Wound Image</span>
+                        <div class="drop-zone">
+                            <i class="fas fa-camera"></i>
+                            <p><strong>Click to Open Camera</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <span class="card-label">Wound Segmentation</span>
+                        <div class="scan-box" id="scanBox">
+                            <div class="laser"></div>
+                            <span id="scanStatus">Waiting for image...</span>
+                        </div>
+
+                        <!-- Segmentation Result Area -->
+                        <div id="segmentationResult" style="
+                            display:none;
+                            margin-top:10px;
+                            background: rgba(168,85,247,0.07);
+                            border: 1px solid rgba(168,85,247,0.2);
+                            border-radius: 12px;
+                            padding: 10px 14px;
+                        ">
+                            <div style="font-size:10px; color:#c2a8ff; text-transform:uppercase; letter-spacing:1.2px; font-weight:700; margin-bottom:8px;">Segmentation Result</div>
+                            <div id="segmentationContent" style="font-size:12px; color:var(--text); line-height:1.7;"></div>
+                        </div>
+
+                        <div class="action-btn-group" style="margin-top:10px;">
+                            <div class="action-btn-top-row">
+                                <button class="action-btn action-btn-analyze" onclick="analyzeAnother()">
+                                    <i class="fas fa-microscope"></i> Analyze Another
+                                </button>
+                                <button class="action-btn action-btn-upload" onclick="uploadAnother()">
+                                    <i class="fas fa-upload"></i> Upload Another
+                                </button>
+                            </div>
+                            <button class="action-btn action-btn-close-card" onclick="closeAnalysis()">
+                                <i class="fas fa-times-circle"></i> Close
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Infection Risk / Healing Progress -->
+                    <div class="card">
+                        <span class="card-label">Infection Risk</span>
+                        <div class="risk-value">84% <span class="status">HIGH</span></div>
+                        <div class="risk-stage">Stage 2 — Diabetic Foot Ulcer</div>
+                    </div>
+
+                    <!-- Healing Progress -->
+                    <div class="card span2">
+                        <div class="card-header">
+                            <span class="card-title" style="color:#c2a8ff; font-size:10px; text-transform:uppercase; letter-spacing:1.2px;">Healing Progress</span>
+                        </div>
+                        <div class="chart-wrap">
+                            <canvas id="healingChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- WOUND AI PAGE -->
+            <div id="wound-ai-page" class="page">
+                <div class="card" style="max-width:600px;margin-top:4px;">
+                    <div class="card-header"><span class="card-title">Available Models</span></div><br>
+                    <div class="model-item active-model">
+                        <div><div class="model-name">DeepLearning-WoundV3</div><div class="model-meta">Accuracy: 94.2% · Last updated: Apr 2025</div></div>
+                        <span class="badge b-stable">Active</span>
+                    </div>
+                    <div class="model-item">
+                        <div><div class="model-name">Classification-Model-B2</div><div class="model-meta">Accuracy: 91.8% · Last updated: Mar 2025</div></div>
+                        <span class="badge b-medium">Standby</span>
+                    </div>
+                    <div class="model-item">
+                        <div><div class="model-name">ResNet-Wound-Detect</div><div class="model-meta">Accuracy: 89.5% · Last updated: Jan 2025</div></div>
+                        <span class="badge" style="background:rgba(159,147,200,0.1);color:var(--muted)">Offline</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANALYTICS PAGE -->
+            <div id="analytics-page" class="page">
+                <div class="card" style="margin-top:4px;">
+                    <div class="card-header"><span class="card-title">Infection Risk Trends — This Week</span></div>
+                    <div style="height:260px;position:relative;"><canvas id="analyticsChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- SETTINGS PAGE -->
+            <div id="settings-page" class="page">
+                <div class="card" style="max-width:500px;margin-top:4px;">
+                    <div class="card-header"><span class="card-title" data-i18n="preferences">Preferences</span></div><br>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+
+                        <!-- Dark Mode -->
+                        <div class="pref-item">
+                            <span data-i18n="darkMode">Dark Mode</span>
+                            <div class="toggle-wrap">
+                                <label class="toggle">
+                                    <input type="checkbox" id="toggleDark" checked onchange="applyDarkMode(this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label" id="darkLabel">ON</span>
+                            </div>
+                        </div>
+
+                        <!-- Language -->
+                        <div class="pref-item">
+                            <span data-i18n="language">Language</span>
+                            <select class="lang-select" id="langSelect" onchange="applyLanguage(this.value)">
+                                <option value="en">English</option>
+                                <option value="ar">العربية</option>
+                            </select>
+                        </div>
+
+                        <!-- Notifications -->
+                        <div class="pref-item">
+                            <span data-i18n="notifications">Notifications</span>
+                            <div class="toggle-wrap">
+                                <label class="toggle">
+                                    <input type="checkbox" id="toggleNotif" checked onchange="applyNotif(this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label" id="notifLabel">ON</span>
+                            </div>
+                        </div>
+
+                        <!-- Update -->
+                        <div class="pref-item clickable" onclick="alert('Updating AI Library...')">
+                            <span><i class="fas fa-download" style="margin-right:8px;"></i><span data-i18n="update">Update AI Library</span></span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- CAMERA MODAL -->
+<div id="cameraModal">
+    <video id="video" autoplay></video>
+    <div class="modal-btns">
+        <button class="btn-capture" onclick="captureImage()"><i class="fas fa-camera"></i> Capture</button>
+        <button class="btn-upload"  onclick="uploadImage()"><i class="fas fa-upload"></i> Upload</button>
+        <button class="btn-close"   onclick="closeCamera()"><i class="fas fa-times"></i> Close</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Navigation
+    const pageTitles = {
+        en: {
+            dashboard:  { title: 'Wound AI Assessment', sub: 'Patient: Eleanor Vance · P-10234 · Age 67' },
+            'wound-ai': { title: 'Wound AI Models',     sub: 'AI-powered wound analysis' },
+            analytics:  { title: 'Analytics',           sub: 'Patient statistics & infection trends' },
+            settings:   { title: 'Settings',            sub: 'System preferences' }
+        },
+        ar: {
+            dashboard:  { title: 'تقييم الجرح بالذكاء الاصطناعي', sub: 'المريض: إيليانور فانس · P-10234 · العمر 67' },
+            'wound-ai': { title: 'نماذج الذكاء الاصطناعي',         sub: 'تحليل الجروح بالذكاء الاصطناعي' },
+            analytics:  { title: 'التحليلات',                       sub: 'إحصائيات المريض واتجاهات العدوى' },
+            settings:   { title: 'الإعدادات',                       sub: 'تفضيلات النظام' }
+        }
+    };
+    let currentLang = 'en';
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelector('.nav-item.active').classList.remove('active');
+            item.classList.add('active');
+            const page = item.getAttribute('data-page');
+            document.querySelectorAll('.page').forEach(s => s.classList.remove('active'));
+            document.getElementById(page + '-page').classList.add('active');
+            const meta = (pageTitles[currentLang] || pageTitles.en)[page] || {};
+            document.getElementById('pageTitle').textContent    = meta.title || '';
+            document.getElementById('pageSubtitle').textContent = meta.sub   || '';
+            if (page === 'analytics' && !window.analyticsBuilt) buildAnalyticsChart();
+        });
+    });
+
+    // ── Healing Chart with real dates every 3 days ──
+    let healingChartInstance = null;
+    function buildHealingChart(tickColor) {
+        const ctx = document.getElementById('healingChart').getContext('2d');
+        if (healingChartInstance) healingChartInstance.destroy();
+        const grad = ctx.createLinearGradient(0, 0, 0, 160);
+        grad.addColorStop(0, 'rgba(168,85,247,0.4)');
+        grad.addColorStop(1, 'rgba(168,85,247,0)');
+
+        // Generate last 7 points every 3 days (covers ~21 days)
+        const labels = [];
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - (i * 3));
+            labels.push(d.toLocaleDateString('en-GB', { day:'2-digit', month:'short' }));
+        }
+
+        healingChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Risk Level',
+                    data: [55, 60, 72, 68, 75, 65, 84],
+                    borderColor: '#a855f7', borderWidth: 2.5,
+                    fill: true, backgroundColor: grad,
+                    tension: 0.4, pointRadius: 5,
+                    pointBackgroundColor: '#f2edff', pointBorderColor: '#a855f7', pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: ctx => ctx[0].label,
+                            label: ctx => ' Risk: ' + ctx.raw + '%'
+                        }
+                    }
+                },
+                scales: {
+                    y: { min:0, max:100, grid:{color:'rgba(128,128,128,0.1)'}, ticks:{color: tickColor || '#9f93c8', font:{size:10}, callback: v => v + '%'} },
+                    x: { grid:{color:'rgba(128,128,128,0.05)'}, ticks:{color: tickColor || '#9f93c8', font:{size:10}} }
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        buildHealingChart('#9f93c8');
+    });
+
+    // Analytics Chart
+    window.analyticsBuilt = false;
+    function buildAnalyticsChart() {
+        const aCtx = document.getElementById('analyticsChart').getContext('2d');
+        new Chart(aCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+                datasets: [
+                    { label:'Critical', data:[3,4,5,4,5,4,5], backgroundColor:'rgba(255,123,114,0.7)', borderRadius:6 },
+                    { label:'High',     data:[5,6,7,6,7,6,7], backgroundColor:'rgba(251,146,60,0.7)',  borderRadius:6 },
+                    { label:'Stable',   data:[10,11,12,11,12,10,12], backgroundColor:'rgba(52,211,153,0.5)', borderRadius:6 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color:'#9f93c8', font:{size:11} } } },
+                scales: {
+                    y: { stacked:true, grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#9f93c8',font:{size:10}} },
+                    x: { stacked:true, grid:{display:false}, ticks:{color:'#9f93c8',font:{size:10}} }
+                }
+            }
+        });
+        window.analyticsBuilt = true;
+    }
+
+    // Camera
+    let videoStream;
+    function openCamera() {
+        document.getElementById('cameraModal').style.display = 'flex';
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { videoStream = stream; document.getElementById('video').srcObject = stream; })
+            .catch(err => alert('Camera access denied: ' + err.message));
+    }
+    function closeCamera() {
+        document.getElementById('cameraModal').style.display = 'none';
+        if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+    }
+
+    // ── Segmentation Result ──
+    // استخدم الفانكشن دي لما الـ database يرجع النتيجة
+    // مثال: showSegmentationResult({ area: '4.2 cm²', type: 'Diabetic Ulcer', severity: 'High' })
+    function showSegmentationResult(data) {
+        const box     = document.getElementById('segmentationResult');
+        const content = document.getElementById('segmentationContent');
+        if (!box || !content) return;
+        let html = '';
+        if (data.area)     html += `<div>📐 <b>Wound Area:</b> ${data.area}</div>`;
+        if (data.type)     html += `<div>🩹 <b>Type:</b> ${data.type}</div>`;
+        if (data.severity) html += `<div>⚠️ <b>Severity:</b> ${data.severity}</div>`;
+        if (data.coverage) html += `<div>📊 <b>Coverage:</b> ${data.coverage}</div>`;
+        // أي field تاني من الـ database
+        Object.keys(data).forEach(k => {
+            if (!['area','type','severity','coverage'].includes(k))
+                html += `<div>• <b>${k}:</b> ${data[k]}</div>`;
+        });
+        content.innerHTML = html;
+        box.style.display = 'block';
+    }
+
+    function hideSegmentationResult() {
+        const box = document.getElementById('segmentationResult');
+        if (box) box.style.display = 'none';
+    }
+    function analyzeAnother() {
+        // Reset scan box and re-open camera for a new analysis
+        const scanBox = document.getElementById('scanBox');
+        scanBox.innerHTML = '<div class="laser"></div><span id="scanStatus">Waiting for image...</span>';
+        openCamera();
+    }
+
+    function uploadAnother() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const src = ev.target.result;
+                const scanBox = document.getElementById('scanBox');
+                scanBox.innerHTML = '';
+                const img = document.createElement('img');
+                img.src = src;
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+                scanBox.appendChild(img);
+                sendImageToDoctor(src);
+                alert('✅ Image sent to doctor!');
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+
+    function closeAnalysis() {
+        const scanBox = document.getElementById('scanBox');
+        scanBox.innerHTML = '<div class="laser"></div><span id="scanStatus">Waiting for image...</span>';
+        hideSegmentationResult();
+    }
+
+    // ── UPLOAD IMAGE TO FASTAPI ──
+    // بتاخد إما File object (من input) أو base64 string (من camera)
+    // وبتبعتها للـ backend وتحفظ الـ URL في الـ DB
+    async function uploadWoundImage(imageSource, patientId = null) {
+        const scanStatus = document.getElementById('scanStatus');
+        try {
+            const formData = new FormData();
+
+            // لو base64 (من الكاميرا) — حولها لـ Blob
+            if (typeof imageSource === 'string' && imageSource.startsWith('data:')) {
+                const res  = await fetch(imageSource);
+                const blob = await res.blob();
+                formData.append('file', blob, 'wound_capture.jpg');
+            } else {
+                // File object من الـ input
+                formData.append('file', imageSource);
+            }
+
+            if (patientId) formData.append('patient_id', patientId);
+
+            const response = await fetch('http://127.0.0.1:8000/wound/upload', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Upload failed: ' + response.status);
+
+            const data = await response.json();
+            // data.image_url → الـ URL المحفوظ في الـ DB
+            // data.segmentation → نتيجة الـ segmentation لو الـ backend بيعملها
+
+            // اعرض الصورة من الـ URL المرجع من الـ backend
+            const scanBox = document.getElementById('scanBox');
+            scanBox.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = data.image_url;
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+            scanBox.appendChild(img);
+
+            // لو في segmentation result في الـ response
+            if (data.segmentation) showSegmentationResult(data.segmentation);
+
+            return data;
+
+        } catch (err) {
+            console.error('Upload error:', err);
+            if (scanStatus) scanStatus.textContent = 'Upload failed. Try again.';
+        }
+    }
+
+    async function captureImage() {
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const base64 = canvas.toDataURL('image/jpeg');
+
+        // اعرض preview فوراً
+        const scanBox = document.getElementById('scanBox');
+        scanBox.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = base64;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+        scanBox.appendChild(img);
+
+        closeCamera();
+
+        // ابعت للـ backend
+        const patientId = JSON.parse(localStorage.getItem('selectedPatient') || '{}').id || null;
+        await uploadWoundImage(base64, patientId);
+    }
+
+    async function uploadImage() {
+        const input = document.createElement('input');
+        input.type  = 'file';
+        input.accept = 'image/*';
+        input.onchange = async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // اعرض preview فوراً
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const scanBox = document.getElementById('scanBox');
+                scanBox.innerHTML = '';
+                const img = document.createElement('img');
+                img.src = ev.target.result;
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+                scanBox.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+
+            closeCamera();
+
+            // ابعت الـ File مباشرةً للـ backend
+            const patientId = JSON.parse(localStorage.getItem('selectedPatient') || '{}').id || null;
+            await uploadWoundImage(file, patientId);
+        };
+        input.click();
+    }
+
+    // Load patients (graceful fail if API offline)
+    async function loadPatients() {
+        try {
+            const res = await fetch("http://127.0.0.1:8000/patient/all", {
+                headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+            });
+            const patients = await res.json();
+            const tbody = document.getElementById("patientsTableBody");
+            if (!tbody) return;
+            tbody.innerHTML = "";
+            patients.forEach(p => {
+                tbody.innerHTML += `<tr>
+                    <td>${p.p_name}</td><td>${p.id}</td>
+                    <td><span class="badge b-critical">${p.risk}%</span></td>
+                    <td>-</td>
+                    <td><button onclick="deletePatient(${p.id})" style="color:#ff7b72;background:none;border:none;cursor:pointer;"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
+            });
+        } catch(e) { console.warn("API offline:", e.message); }
+    }
+
+    async function deletePatient(id) {
+        await fetch("http://127.0.0.1:8000/patient/delete/" + id, {
+            method: "DELETE",
+            headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+        });
+        loadPatients();
+    }
+
+    loadPatients();
+
+    // ── SETTINGS FUNCTIONS ──
+    const translations = {
+        en: {
+            preferences:'Preferences', darkMode:'Dark Mode', language:'Language',
+            notifications:'Notifications', update:'Update AI Library',
+            // sidebar
+            navDashboard:'Dashboard', navWoundAI:'Wound AI', navAnalytics:'Analytics', navSettings:'Settings',
+            // dashboard cards
+            patientProfile:'Patient Profile', uploadWound:'Upload Wound Image',
+            clickCamera:'Click to Open Camera', woundSeg:'Wound Segmentation',
+            waitingImg:'Waiting for image...', infectionRisk:'Infection Risk',
+            riskStage:'Stage 2 — Diabetic Foot Ulcer', healingProgress:'Healing Progress',
+            analyzeAnother:'Analyze Another', uploadAnother:'Upload Another', close:'Close',
+            // topbar search
+            searchPlaceholder:'Search...',
+            // patient info
+            patientName:'Eleanor Vance', patientId:'ID: P-10234 · Age 67',
+            history1:'Diabetes II', history1sub:'12 Mon · July 2023',
+            history2:'Hypertension', history2sub:'8 Mon · Nov 2023',
+            history3:'Ulcer 2023', history3sub:'Medical Timeline',
+        },
+        ar: {
+            preferences:'التفضيلات', darkMode:'الوضع الداكن', language:'اللغة',
+            notifications:'الإشعارات', update:'تحديث مكتبة الذكاء الاصطناعي',
+            navDashboard:'لوحة التحكم', navWoundAI:'ذكاء الجروح', navAnalytics:'التحليلات', navSettings:'الإعدادات',
+            patientProfile:'ملف المريض', uploadWound:'رفع صورة الجرح',
+            clickCamera:'اضغط لفتح الكاميرا', woundSeg:'تجزئة الجرح',
+            waitingImg:'في انتظار الصورة...', infectionRisk:'خطر العدوى',
+            riskStage:'المرحلة 2 — قرحة القدم السكرية', healingProgress:'تقدم الشفاء',
+            analyzeAnother:'تحليل آخر', uploadAnother:'رفع آخر', close:'إغلاق',
+            searchPlaceholder:'بحث...',
+            patientName:'إيليانور فانس', patientId:'المعرف: P-10234 · العمر 67',
+            history1:'السكري النوع الثاني', history1sub:'12 شهر · يوليو 2023',
+            history2:'ارتفاع ضغط الدم', history2sub:'8 أشهر · نوفمبر 2023',
+            history3:'قرحة 2023', history3sub:'الجدول الطبي',
+        }
+    };
+
+    function applyDarkMode(enabled) {
+        const r = document.documentElement;
+        document.getElementById('darkLabel').textContent = enabled ? 'ON' : 'OFF';
+        if (enabled) {
+            r.style.setProperty('--bg',    '#0e0b1a');
+            r.style.setProperty('--side',  '#13102280');
+            r.style.setProperty('--card',  '#1a1330');
+            r.style.setProperty('--card2', '#221940');
+            r.style.setProperty('--border','#2d2252');
+            r.style.setProperty('--text',  '#f0ebff');
+            r.style.setProperty('--muted', '#9080bb');
+            document.body.style.background = '';
+            document.querySelector('.sidebar').style.background = 'rgba(19,16,34,0.95)';
+            document.querySelector('.topbar').style.background  = 'rgba(14,11,26,0.85)';
+            buildHealingChart('#9f93c8');
+        } else {
+            r.style.setProperty('--bg',    '#f5f3ff');
+            r.style.setProperty('--side',  '#ede8fb');
+            r.style.setProperty('--card',  '#ffffff');
+            r.style.setProperty('--card2', '#f0ecff');
+            r.style.setProperty('--border','#d4caef');
+            r.style.setProperty('--text',  '#1a1030');
+            r.style.setProperty('--muted', '#6b5fa0');
+            document.body.style.background = '#f5f3ff';
+            document.querySelector('.sidebar').style.background = '#ede8fb';
+            document.querySelector('.topbar').style.background  = 'rgba(237,232,251,0.95)';
+            buildHealingChart('#6b5fa0');
+        }
+    }
+
+    function applyNotif(enabled) {
+        document.getElementById('notifLabel').textContent = enabled ? 'ON' : 'OFF';
+        const dot = document.querySelector('.notif-dot');
+        if (dot) dot.style.display = enabled ? 'block' : 'none';
+    }
+
+    function applyLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang] || translations.en;
+        document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.lang = lang;
+
+        // sidebar nav
+        const navItems = document.querySelectorAll('.nav-item');
+        const navKeys  = ['navDashboard','navWoundAI','navAnalytics','navSettings'];
+        navItems.forEach((el, i) => {
+            const icon = el.querySelector('i').outerHTML;
+            el.innerHTML = icon + ' ' + t[navKeys[i]];
+        });
+
+        // topbar title based on active page
+        const activePage = document.querySelector('.nav-item.active')?.getAttribute('data-page') || 'dashboard';
+        const meta = (pageTitles[lang] || pageTitles.en)[activePage] || {};
+        document.getElementById('pageTitle').textContent    = meta.title || '';
+        document.getElementById('pageSubtitle').textContent = meta.sub   || '';
+
+        // search placeholder
+        const searchInput = document.querySelector('.search input');
+        if (searchInput) searchInput.placeholder = t.searchPlaceholder;
+
+        // dashboard card labels & content
+        const labels = document.querySelectorAll('.card-label');
+        const labelKeys = ['patientProfile','uploadWound','woundSeg','infectionRisk'];
+        labels.forEach((el, i) => { if (t[labelKeys[i]]) el.textContent = t[labelKeys[i]]; });
+
+        // healing progress label
+        const healingLabel = document.querySelector('[style*="c2a8ff"]');
+        if (healingLabel) healingLabel.textContent = t.healingProgress;
+
+        // patient info
+        const pName = document.querySelector('.p-name');
+        const pId   = document.querySelector('.p-id');
+        if (pName) pName.textContent = t.patientName;
+        if (pId)   pId.textContent   = t.patientId;
+
+        // history items
+        const hItems = document.querySelectorAll('.h-item');
+        if (hItems[0]) { hItems[0].childNodes[0].textContent = t.history1; hItems[0].querySelector('small').textContent = t.history1sub; }
+        if (hItems[1]) { hItems[1].childNodes[0].textContent = t.history2; hItems[1].querySelector('small').textContent = t.history2sub; }
+        if (hItems[2]) { hItems[2].childNodes[0].textContent = t.history3; hItems[2].querySelector('small').textContent = t.history3sub; }
+
+        // upload card text
+        const uploadStrong = document.querySelector('#uploadCard strong');
+        if (uploadStrong) uploadStrong.textContent = t.clickCamera;
+
+        // scan status
+        const scanStatus = document.getElementById('scanStatus');
+        if (scanStatus) scanStatus.textContent = t.waitingImg;
+
+        // risk stage
+        const riskStage = document.querySelector('.risk-stage');
+        if (riskStage) riskStage.textContent = t.riskStage;
+
+        // action buttons
+        const actionBtns = document.querySelectorAll('.action-btn');
+        const btnKeys    = ['analyzeAnother','uploadAnother','close'];
+        const btnIcons   = ['fa-microscope','fa-upload','fa-times-circle'];
+        actionBtns.forEach((btn, i) => {
+            btn.innerHTML = `<i class="fas ${btnIcons[i]}"></i> ${t[btnKeys[i]]}`;
+        });
+
+        // settings data-i18n
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (t[key]) el.textContent = t[key];
+        });
+    }
+</script>
+</body>
+</html>

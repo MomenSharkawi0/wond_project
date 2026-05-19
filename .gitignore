@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Secrets / config
+.env
+.env.local
+*.env
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Databases (SQLite)
+*.db
+*.sqlite
+*.sqlite3
+database.db
+
+# Runtime data — user uploads
+uploads/
+
+# Large model artifacts (not loaded by ai_service.py; track with LFS if needed)
+*.h5
+*.pt
+*.pth
+*.onnx
+unet_model.h5
+
+# Logs
+*.log

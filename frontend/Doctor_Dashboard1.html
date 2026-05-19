@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedAura AI — Doctor Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+    --bg:     #110d1f; --side:   #181228; --card:   #1d1630;
+    --card2:  #241b3d; --border: #2f2550; --accent: #ff4b91;
+    --purple: #a855f7; --text:   #f2edff; --muted:  #9f93c8;
+}
+body.light-mode {
+    --bg: #f3f4f8; --side: #ffffff; --card: #ffffff;
+    --card2: #f8f9fc; --border: #e2e5f1; --text: #1e1b3a; --muted: #6b7280;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
+.app { display: flex; height: 100vh; }
+.sidebar { width: 220px; flex-shrink: 0; background: var(--side); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; transition: background 0.3s, border 0.3s; }
+.logo { padding: 22px 22px 18px; color: var(--accent); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+.logo i { font-size: 18px; }
+.nav { flex: 1; padding: 14px 0; overflow-y: auto; }
+.nav-item { padding: 11px 22px; color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.2s; }
+.nav-item:hover { color: var(--text); background: rgba(168,85,247,0.05); transform: translateX(3px); border-left-color: rgba(255,75,145,0.3); }
+.nav-item.active { background: var(--card2); color: var(--text); border-left-color: var(--accent); }
+.nav-item.active i, .nav-item:hover i { color: var(--accent); }
+.nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 20px; }
+.sidebar-footer { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.doc-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--purple)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; color: white; }
+.doc-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.doc-spec { font-size: 10px; color: var(--muted); }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 28px; background: var(--side); border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; transition: background 0.3s; }
+.topbar-left h2 { font-size: 17px; font-weight: 700; }
+.topbar-left p { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+.search { background: var(--card2); border: 1px solid var(--border); border-radius: 50px; padding: 7px 16px; display: flex; align-items: center; gap: 8px; width: 220px; transition: 0.3s; }
+.search:focus-within { border-color: var(--purple); width: 270px; }
+.search input { background: none; border: none; color: var(--text); outline: none; font-size: 12px; width: 100%; }
+.search input::placeholder { color: var(--muted); }
+.search i { color: var(--muted); font-size: 12px; }
+
+.notif-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: 0.2s; }
+.notif-btn:hover { border-color: var(--purple); }
+.notif-btn i { color: var(--muted); font-size: 14px; }
+.notif-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; background: var(--accent); border-radius: 50%; display: block; }
+
+.notif-dropdown { position: absolute; top: 55px; right: 28px; width: 320px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: none; z-index: 100; overflow: hidden; }
+.notif-dropdown.show { display: block; animation: fadeUp 0.2s ease; }
+.notif-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text); display: flex; justify-content: space-between; align-items: center; }
+.notif-list-item { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-start; transition: 0.2s; cursor: pointer; }
+.notif-list-item:last-child { border-bottom: none; }
+.notif-list-item:hover { background: var(--card2); }
+.notif-icon-sm { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.notif-content { flex: 1; }
+.notif-text { font-size: 12px; color: var(--text); line-height: 1.4; }
+.notif-time-sm { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+.content { flex: 1; overflow-y: auto; padding: 22px 28px; }
+.page { display: none; }
+.page.active { display: block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px 20px; display: flex; align-items: center; gap: 16px; transition: 0.25s; }
+.stat-card:hover { border-color: rgba(168,85,247,0.4); transform: translateY(-2px); }
+.stat-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.si-blue { background: rgba(96,165,250,0.15); color: #60a5fa; } .si-red { background: rgba(255,123,114,0.15); color: #ff7b72; }
+.si-green { background: rgba(52,211,153,0.15); color: #34d399; } .si-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+.stat-val { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1.1; }
+.stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.stat-change { font-size: 10px; margin-top: 4px; } .up { color: #34d399; } .down { color: #ff7b72; }
+
+.two-col { display: grid; grid-template-columns: 1fr 340px; gap: 18px; margin-bottom: 22px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 20px; transition: background 0.3s; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.card-action { font-size: 11px; color: var(--purple); cursor: pointer; } .card-action:hover { color: var(--accent); }
+
+.pt-table { width: 100%; border-collapse: collapse; }
+.pt-table th { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 0 10px 10px; text-align: left; font-weight: 600; }
+.pt-table td { padding: 11px 10px; font-size: 12px; border-top: 1px solid rgba(47,37,80,0.5); }
+.pt-table tr:hover td { background: rgba(168,85,247,0.04); }
+.p-cell { display: flex; align-items: center; gap: 10px; }
+.p-mini-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.av1 { background: rgba(255,75,145,0.2); color: var(--accent); } .av2 { background: rgba(168,85,247,0.2); color: var(--purple); }
+.av3 { background: rgba(96,165,250,0.2); color: #60a5fa; } .av4 { background: rgba(52,211,153,0.2); color: #34d399; }
+.av5 { background: rgba(251,146,60,0.2); color: #fb923c; } .av6 { background: rgba(255,123,114,0.2); color: #ff7b72; }
+.p-name-cell strong { display: block; font-size: 12px; font-weight: 600; color: var(--text); } .p-name-cell span { font-size: 10px; color: var(--muted); }
+.badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+.b-critical { background: rgba(255,123,114,0.15); color: #ff7b72; } .b-high { background: rgba(251,146,60,0.15); color: #fb923c; }
+.b-medium { background: rgba(250,204,21,0.15); color: #facc15; } .b-stable { background: rgba(52,211,153,0.15); color: #34d399; }
+.b-low { background: rgba(96,165,250,0.15); color: #60a5fa; }
+.risk-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; margin-top: 4px; min-width: 80px; }
+.risk-fill { height: 100%; border-radius: 4px; }
+.rf-red { background: linear-gradient(90deg, #ff7b72, #ff4b91); } .rf-orange { background: linear-gradient(90deg, #fb923c, #fbbf24); }
+.rf-yellow { background: linear-gradient(90deg, #facc15, #a3e635); } .rf-green { background: linear-gradient(90deg, #34d399, #60a5fa); }
+
+.action-btns { display: flex; gap: 6px; }
+.btn-sm { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 11px; padding: 4px 10px; border-radius: 20px; cursor: pointer; transition: 0.2s; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 4px; }
+.btn-sm:hover { border-color: var(--purple); color: var(--purple); } .btn-sm.danger:hover { border-color: #ff7b72; color: #ff7b72; }
+
+.appt-list { display: flex; flex-direction: column; gap: 10px; }
+.appt-item { display: flex; align-items: center; gap: 12px; background: var(--card2); border-radius: 12px; padding: 12px 14px; border: 1px solid transparent; transition: 0.2s; }
+.appt-item:hover { border-color: rgba(168,85,247,0.3); }
+.appt-time { font-size: 11px; font-weight: 700; color: var(--purple); min-width: 42px; text-align: center; }
+.appt-sep { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+.appt-info { flex: 1; } .appt-name { font-size: 12px; font-weight: 600; color: var(--text); } .appt-type { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.appt-status { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+.as-done { background: rgba(52,211,153,0.15); color: #34d399; } .as-next { background: rgba(168,85,247,0.2); color: var(--purple); } .as-waiting { background: rgba(250,204,21,0.15); color: #facc15; }
+
+.bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.alert-list { display: flex; flex-direction: column; gap: 10px; }
+.alert-item { display: flex; align-items: center; gap: 12px; background: var(--card2); border-radius: 12px; padding: 12px 14px; border-left: 3px solid; }
+.alert-item.critical { border-color: #ff7b72; } .alert-item.warning { border-color: #fb923c; }
+.alert-info { flex: 1; } .alert-name { font-size: 12px; font-weight: 600; color: var(--text); } .alert-msg { font-size: 10px; color: var(--muted); margin-top: 2px; } .alert-time { font-size: 10px; color: var(--muted); }
+
+.doctors-list { display: flex; flex-direction: column; gap: 10px; }
+.doctor-item { display: flex; align-items: center; gap: 12px; background: var(--card2); border-radius: 12px; padding: 12px 14px; border: 1px solid transparent; transition: 0.2s; }
+.doctor-item:hover { border-color: rgba(168,85,247,0.3); }
+.dr-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.dr-info { flex: 1; } .dr-name { font-size: 12px; font-weight: 600; color: var(--text); } .dr-spec { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.dr-patients { font-size: 10px; color: var(--purple); font-weight: 600; }
+.dr-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; } .online { background: #34d399; } .busy { background: #fb923c; } .offline { background: var(--muted); }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.page-title { font-size: 18px; font-weight: 700; } .page-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.add-btn { background: var(--purple); color: white; border: none; padding: 9px 20px; border-radius: 50px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+.add-btn:hover { background: #9333ea; transform: translateY(-1px); }
+.filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-btn { background: var(--card2); border: 1px solid var(--border); color: var(--muted); padding: 6px 16px; border-radius: 50px; font-size: 11px; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
+.filter-btn.active, .filter-btn:hover { background: var(--purple); color: white; border-color: var(--purple); }
+.full-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+.full-table-wrap table { width: 100%; border-collapse: collapse; }
+.full-table-wrap th { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 14px 18px; text-align: left; font-weight: 600; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); }
+.full-table-wrap td { padding: 13px 18px; font-size: 12px; border-bottom: 1px solid rgba(47,37,80,0.4); color: var(--text); }
+.full-table-wrap tr:last-child td { border-bottom: none; } .full-table-wrap tr:hover td { background: rgba(168,85,247,0.04); }
+
+.appt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.time-slot { background: var(--card2); border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border); display: flex; gap: 14px; transition: 0.2s; }
+.time-slot:hover { border-color: rgba(168,85,247,0.35); }
+.ts-time { font-size: 13px; font-weight: 700; color: var(--purple); min-width: 48px; }
+.ts-name { font-size: 13px; font-weight: 600; color: var(--text); } .ts-type { font-size: 11px; color: var(--muted); margin-top: 3px; } .ts-tags { margin-top: 7px; display: flex; gap: 6px; }
+
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 24px; }
+.toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .toggle-slider { background-color: var(--purple); }
+input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+.img-history-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+.img-history-item { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); position: relative; transition: 0.2s; cursor: pointer; }
+.img-history-item:hover { border-color: var(--purple); transform: scale(1.02); }
+.img-history-item img { width: 100%; height: 100px; object-fit: cover; display: block; background: var(--card2); }
+.img-date { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 9px; padding: 4px 8px; text-align: center; }
+
+/* Language Select */
+.lang-select { background: var(--card2); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; font-size: 12px; outline: none; font-family: 'Inter', sans-serif; cursor: pointer; }
+.lang-select option { background: var(--card); color: var(--text); }
+
+/* RTL Support */
+html[dir="rtl"] .nav-item { border-left: 3px solid transparent; border-right: 3px solid transparent; }
+html[dir="rtl"] .nav-item.active { border-left-color: transparent; border-right-color: var(--accent); }
+html[dir="rtl"] .nav-item:hover { border-left-color: transparent; border-right-color: rgba(255,75,145,0.3); transform: translateX(-3px); }
+html[dir="rtl"] .nav-badge { margin-left: 0; margin-right: auto; }
+html[dir="rtl"] .alert-item { border-left: none; border-right: 3px solid; }
+html[dir="rtl"] .notif-dropdown { right: auto; left: 28px; }
+
+::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; } ::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+</style>
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="logo"><i class="fas fa-wave-square"></i> MedAura AI</div>
+        <nav class="nav">
+            <div class="nav-item active" data-page="dashboard"><i class="fas fa-th-large"></i> <span data-lang="nav_dashboard">Dashboard</span></div>
+            <div class="nav-item" data-page="patients"><i class="fas fa-users"></i> <span data-lang="nav_patients">Patients</span> <span class="nav-badge" id="patientBadge">6</span></div>
+            <div class="nav-item" data-page="appointments"><i class="fas fa-calendar-alt"></i> <span data-lang="nav_appointments">Appointments</span></div>
+            <div class="nav-item" data-page="wound-ai"><i class="fas fa-brain"></i> <span data-lang="nav_wound_ai">Wound AI</span></div>
+            <div class="nav-item" data-page="settings"><i class="fas fa-cog"></i> <span data-lang="nav_settings">Settings</span></div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="doc-avatar">DR</div>
+            <div><div class="doc-name">Dr. Ramy Hassan</div><div class="doc-spec">Wound Specialist</div></div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div class="topbar-left">
+                <h2 id="pageTitle">Good Morning, Dr. Ramy 👋</h2>
+                <p id="pageSubtitle">Wednesday, 30 April 2025 · 8 appointments today</p>
+            </div>
+            <div class="topbar-right">
+                <div class="search"><i class="fas fa-search"></i><input type="text" placeholder="Search patients..."></div>
+                <div class="notif-btn" onclick="toggleNotifDropdown()"><i class="fas fa-bell"></i><div class="notif-dot" id="notifDot"></div></div>
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header"><span>Notifications</span><span style="color:var(--purple); font-size:11px; cursor:pointer;" onclick="clearNotifs()">Mark all read</span></div>
+                    <div class="notif-list-item"><div class="notif-icon-sm" style="background:rgba(255,123,114,0.15); color:#ff7b72;">🩸</div><div class="notif-content"><div class="notif-text"><strong>Eleanor Vance</strong> - Dressing overdue 6h</div><div class="notif-time-sm">2 hours ago</div></div></div>
+                    <div class="notif-list-item"><div class="notif-icon-sm" style="background:rgba(251,146,60,0.15); color:#fb923c;">⚠️</div><div class="notif-content"><div class="notif-text"><strong>Khaled Mostafa</strong> - Infection risk 91%</div><div class="notif-time-sm">4 hours ago</div></div></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- DASHBOARD PAGE -->
+            <div id="dashboard-page" class="page active">
+                <div class="stats-row">
+                    <div class="stat-card"><div class="stat-icon si-blue"><i class="fas fa-users"></i></div><div class="stat-info"><div class="stat-val" id="statTotal">6</div><div class="stat-label" data-lang="stat_patients">Total Patients</div></div></div>
+                    <div class="stat-card"><div class="stat-icon si-red"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-info"><div class="stat-val" id="statCritical">2</div><div class="stat-label" data-lang="stat_critical">Critical Cases</div></div></div>
+                    <div class="stat-card"><div class="stat-icon si-green"><i class="fas fa-calendar-check"></i></div><div class="stat-info"><div class="stat-val">8</div><div class="stat-label" data-lang="stat_appointments">Today's Appointments</div></div></div>
+                    <div class="stat-card"><div class="stat-icon si-purple"><i class="fas fa-heartbeat"></i></div><div class="stat-info"><div class="stat-val">91%</div><div class="stat-label" data-lang="stat_recovery">Recovery Rate</div></div></div>
+                </div>
+                <div class="two-col">
+                    <div class="card"><div class="card-header"><span class="card-title" data-lang="recent_patients">Recent Patients</span><span class="card-action" onclick="switchPage('patients')">View all →</span></div><table class="pt-table"><thead><tr><th>Patient</th><th>Condition</th><th>Risk</th><th>Status</th><th></th></tr></thead><tbody id="recentPatientsBody"></tbody></table></div>
+                    <div class="card"><div class="card-header"><span class="card-title" data-lang="today_appointments">Today's Appointments</span><span class="card-action" onclick="switchPage('appointments')">All →</span></div><div class="appt-list">
+                        <div class="appt-item"><div class="appt-time">09:00</div><div class="appt-sep"></div><div class="appt-info"><div class="appt-name">Eleanor Vance</div><div class="appt-type">Wound Dressing Change</div></div><span class="appt-status as-done">Done</span></div>
+                        <div class="appt-item"><div class="appt-time">10:30</div><div class="appt-sep"></div><div class="appt-info"><div class="appt-name">Mohamed Karim</div><div class="appt-type">Follow-up Assessment</div></div><span class="appt-status as-done">Done</span></div>
+                        <div class="appt-item"><div class="appt-time">11:00</div><div class="appt-sep"></div><div class="appt-info"><div class="appt-name">Sara Ahmed</div><div class="appt-type">Post-op Checkup</div></div><span class="appt-status as-next">Next</span></div>
+                    </div></div>
+                </div>
+                <div class="bottom-row">
+                    <div class="card"><div class="card-header"><span class="card-title" data-lang="critical_alerts">Critical Alerts</span><span class="badge b-critical">2 Active</span></div><div class="alert-list">
+                        <div class="alert-item critical"><span style="font-size:16px">⚠️</span><div class="alert-info"><div class="alert-name">Khaled Mostafa</div><div class="alert-msg">Infection risk reached 91%</div></div><div class="alert-time">Now</div></div>
+                        <div class="alert-item critical"><span style="font-size:16px">🩸</span><div class="alert-info"><div class="alert-name">Eleanor Vance</div><div class="alert-msg">Stage 2 ulcer — dressing overdue 6h</div></div><div class="alert-time">2h ago</div></div>
+                    </div></div>
+                    <div class="card"><div class="card-header"><span class="card-title" data-lang="doctors_duty">Doctors on Duty</span></div><div class="doctors-list">
+                        <div class="doctor-item"><div class="dr-avatar av1">RH</div><div class="dr-info"><div class="dr-name">Dr. Ramy Hassan</div><div class="dr-spec">Wound Specialist · <span class="dr-patients">8 patients</span></div></div><div class="dr-status online"></div></div>
+                        <div class="doctor-item"><div class="dr-avatar av3">LM</div><div class="dr-info"><div class="dr-name">Dr. Layla Mansour</div><div class="dr-spec">Diabetologist · <span class="dr-patients">6 patients</span></div></div><div class="dr-status busy"></div></div>
+                    </div></div>
+                </div>
+            </div>
+
+            <!-- PATIENTS PAGE -->
+            <div id="patients-page" class="page">
+                <div class="page-header"><div><div class="page-title" data-lang="all_patients">All Patients</div><div class="page-sub" id="patientCountLabel">6 patients · 2 critical cases</div></div><button class="add-btn" onclick="openAddModal()"><i class="fas fa-plus"></i> <span data-lang="add_patient">Add Patient</span></button></div>
+                <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+                    <div class="search" style="width:280px;"><i class="fas fa-search"></i><input type="text" id="patientSearch" placeholder="Search by name, ID, condition..." oninput="renderPatients()"></div>
+                    <div class="filter-row" style="margin-bottom:0;"><button class="filter-btn active" data-filter="all" onclick="setFilter(this,'all')">All</button><button class="filter-btn" data-filter="critical" onclick="setFilter(this,'critical')">Critical</button><button class="filter-btn" data-filter="high" onclick="setFilter(this,'high')">High Risk</button><button class="filter-btn" data-filter="stable" onclick="setFilter(this,'stable')">Stable</button></div>
+                </div>
+                <div class="full-table-wrap"><table><thead><tr><th>Patient</th><th>ID</th><th>Age</th><th>Condition</th><th>Risk %</th><th>Status</th><th>Last Visit</th><th>Action</th></tr></thead><tbody id="patientsTableBody"></tbody></table><div id="noResults" style="display:none; text-align:center; padding:30px; color:var(--muted); font-size:13px;"><i class="fas fa-search" style="font-size:24px; margin-bottom:10px; display:block; opacity:0.4;"></i>No patients match your search</div></div>
+            </div>
+
+            <!-- APPOINTMENTS PAGE -->
+            <div id="appointments-page" class="page">
+                <div class="page-header"><div><div class="page-title" data-lang="appointments">Appointments</div><div class="page-sub">Wednesday, 30 April 2025</div></div><button class="add-btn"><i class="fas fa-plus"></i> <span data-lang="new_appointment">New Appointment</span></button></div>
+                <div class="appt-grid">
+                    <div class="time-slot"><div class="ts-time">09:00</div><div class="ts-info"><div class="ts-name">Eleanor Vance</div><div class="ts-type">Wound Dressing Change</div><div class="ts-tags"><span class="badge b-stable">Completed</span></div></div></div>
+                    <div class="time-slot"><div class="ts-time">11:00</div><div class="ts-info"><div class="ts-name">Sara Ahmed</div><div class="ts-type">Post-op Checkup</div><div class="ts-tags"><span class="badge b-low">Now</span></div></div></div>
+                </div>
+            </div>
+
+            <!-- WOUND AI PAGE -->
+            <div id="wound-ai-page" class="page">
+                <div class="page-header"><div><div class="page-title" data-lang="wound_ai">Wound AI Models</div><div class="page-sub">Select active model for analysis</div></div></div>
+                <div class="card" style="max-width:600px">
+                    <div class="card-header"><span class="card-title">Available Models</span></div>
+                    <div style="display:flex;flex-direction:column;gap:10px">
+                        <div style="background:var(--card2);border:1px solid var(--purple);border-radius:14px;padding:16px 18px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600">DeepLearning-WoundV3</span><span class="badge b-stable">Active</span></div><div style="font-size:11px;color:var(--muted);margin-top:4px">Accuracy: 94.2% · Last updated: Apr 2025</div></div>
+                        <div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:16px 18px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600">Classification-Model-B2</span><span class="badge b-medium">Standby</span></div><div style="font-size:11px;color:var(--muted);margin-top:4px">Accuracy: 91.8% · Last updated: Mar 2025</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS PAGE -->
+            <div id="settings-page" class="page">
+                <div class="page-header"><div><div class="page-title" data-lang="settings">Settings</div><div class="page-sub">System preferences</div></div></div>
+                <div class="card" style="max-width:500px">
+                    <div class="card-header"><span class="card-title">Preferences</span></div>
+                    <div style="display:flex;flex-direction:column;gap:14px">
+                        <div style="background:var(--card2);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px" data-lang="dark_mode">Dark Mode</span><label class="toggle-switch"><input type="checkbox" checked onchange="toggleDarkMode(this)"><span class="toggle-slider"></span></label></div>
+                        <div style="background:var(--card2);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px" data-lang="language">Language</span><select class="lang-select" onchange="changeLanguage(this.value)"><option value="en">English</option><option value="ar">العربية</option></select></div>
+                        <div style="background:var(--card2);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px" data-lang="notifications">Notifications</span><label class="toggle-switch"><input type="checkbox" checked onchange="toggleNotifsSetting(this)"><span class="toggle-slider"></span></label></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ADD/EDIT PATIENT MODAL -->
+<div id="addPatientModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:22px;padding:28px;width:480px;max-width:95vw;animation:fadeUp 0.25s ease;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+            <div><div style="font-size:16px;font-weight:700;color:var(--text);" id="modalTitle">Add New Patient</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Fill in the patient details below</div></div>
+            <div onclick="closeAddModal()" style="width:32px;height:32px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;">✕</div>
+        </div>
+        <input type="hidden" id="inp-editId">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div style="grid-column:1/-1;"><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Full Name</label><input id="inp-name" type="text" placeholder="e.g. Ahmed Samy" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Age</label><input id="inp-age" type="number" placeholder="e.g. 45" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Gender</label><select id="inp-gender" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"><option value="Male">Male</option><option value="Female">Female</option></select></div>
+            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Condition</label><input id="inp-condition" type="text" placeholder="e.g. Diabetic Foot Ulcer" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+            <div><label style="display:block;font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;">Risk Level (%)</label><input id="inp-risk" type="number" placeholder="e.g. 75" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:10px;font-size:13px;outline:none;"></div>
+        </div>
+        <div id="modal-error" style="display:none;color:#ff7b72;font-size:12px;margin-top:12px;padding:8px 12px;background:rgba(255,123,114,0.1);border-radius:8px;"></div>
+        <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end;">
+            <button onclick="closeAddModal()" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:9px 20px;border-radius:50px;font-size:12px;cursor:pointer;">Cancel</button>
+            <button onclick="submitPatient()" style="background:var(--purple);color:white;border:none;padding:9px 24px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- VIEW PATIENT MODAL -->
+<div id="patientModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(6px);">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:24px;padding:28px;width:640px;max-width:95vw;box-shadow:0 24px 60px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div id="vm-avatar" style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#ff4b91,#a855f7);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:white;flex-shrink:0;">EV</div>
+                <div><div id="vm-name" style="font-size:16px;font-weight:700;color:var(--text);"></div><div id="vm-meta" style="font-size:11px;color:var(--muted);margin-top:2px;"></div></div>
+            </div>
+            <div onclick="closePatientModal()" style="width:32px;height:32px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:14px;border:1px solid var(--border);">✕</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+            <div style="background:var(--card2);border-radius:12px;padding:14px 16px;border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">Condition</div><div id="vm-condition" style="font-size:13px;font-weight:600;color:var(--text);"></div></div>
+            <div style="background:var(--card2);border-radius:12px;padding:14px 16px;border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">Last Visit</div><div id="vm-visit" style="font-size:13px;font-weight:600;color:var(--text);"></div></div>
+        </div>
+
+        <div style="background:var(--card2);border-radius:12px;padding:14px 16px;border:1px solid var(--border);margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Infection Risk</div><span id="vm-badge" class="badge"></span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><div id="vm-risk" style="font-size:28px;font-weight:700;"></div><div style="flex:1;background:rgba(255,255,255,0.08);height:6px;border-radius:6px;overflow:hidden;"><div id="vm-bar" style="height:100%;border-radius:6px;transition:width 0.8s ease;"></div></div></div>
+        </div>
+
+        <!-- Patient Images History -->
+        <div style="background:var(--card2);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;">Wound Progress Images</div>
+                <button style="background:transparent;border:1px solid var(--purple);color:var(--purple);font-size:10px;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:'Inter',sans-serif;">+ Upload New</button>
+            </div>
+            <div class="img-history-grid" id="vm-images"></div>
+        </div>
+
+        <div style="background:var(--card2);border-radius:12px;padding:16px;border:1px solid var(--border);">
+            <div style="font-size:10px;color:#c2a8ff;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:12px;">Risk Level — This Week</div>
+            <div style="height:150px;position:relative;"><canvas id="patientChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const avatarColors = ['av1','av2','av3','av4','av5','av6'];
+    let patients = [
+        { id:'P-10234', name:'Eleanor Vance',  gender:'Female', age:67, condition:'Diabetic Foot Ulcer', risk:84, lastVisit:'Apr 30', images: [{date: 'Apr 10', url: 'https://placehold.co/150x150/ff7b72/ffffff?text=Wound1'}, {date: 'Apr 20', url: 'https://placehold.co/150x150/fb923c/ffffff?text=Wound2'}, {date: 'Apr 30', url: 'https://placehold.co/150x150/facc15/ffffff?text=Wound3'}] },
+        { id:'P-10238', name:'Khaled Mostafa', gender:'Male',   age:60, condition:'Venous Ulcer',        risk:91, lastVisit:'Apr 29', images: [{date: 'Apr 15', url: 'https://placehold.co/150x150/ff7b72/ffffff?text=Wound1'}, {date: 'Apr 29', url: 'https://placehold.co/150x150/ff4b91/ffffff?text=Wound2'}] },
+        { id:'P-10235', name:'Mohamed Karim',  gender:'Male',   age:54, condition:'Pressure Ulcer',      risk:67, lastVisit:'Apr 30', images: [{date: 'Apr 25', url: 'https://placehold.co/150x150/fb923c/ffffff?text=Wound1'}] },
+        { id:'P-10236', name:'Sara Ahmed',     gender:'Female', age:42, condition:'Surgical Wound',      risk:45, lastVisit:'Apr 28', images: [] },
+        { id:'P-10237', name:'Hana Nabil',     gender:'Female', age:31, condition:'Burn Wound',          risk:22, lastVisit:'Apr 27', images: [{date: 'Apr 20', url: 'https://placehold.co/150x150/34d399/ffffff?text=Burn1'}, {date: 'Apr 27', url: 'https://placehold.co/150x150/60a5fa/ffffff?text=Burn2'}] },
+        { id:'P-10239', name:'Nour Samy',      gender:'Female', age:38, condition:'Post-op Wound',       risk:38, lastVisit:'Apr 26', images: [] },
+    ];
+    let currentFilter = 'all';
+
+    /* ====== Language System ====== */
+    const translations = {
+        en: {
+            nav_dashboard: 'Dashboard', nav_patients: 'Patients', nav_appointments: 'Appointments', nav_wound_ai: 'Wound AI', nav_settings: 'Settings',
+            stat_patients: 'Total Patients', stat_critical: 'Critical Cases', stat_appointments: "Today's Appointments", stat_recovery: 'Recovery Rate',
+            recent_patients: 'Recent Patients', today_appointments: "Today's Appointments", critical_alerts: 'Critical Alerts', doctors_duty: 'Doctors on Duty',
+            all_patients: 'All Patients', add_patient: 'Add Patient', appointments: 'Appointments', new_appointment: 'New Appointment', wound_ai: 'Wound AI Models', settings: 'Settings',
+            dark_mode: 'Dark Mode', language: 'Language', notifications: 'Notifications',
+            topbar_title_dash: 'Good Morning, Dr. Ramy 👋', topbar_sub_dash: 'Wednesday, 30 April 2025 · 8 appointments today',
+            topbar_title_pat: 'Patients', topbar_title_appt: 'Appointments', topbar_title_ai: 'Wound AI', topbar_title_set: 'Settings'
+        },
+        ar: {
+            nav_dashboard: 'لوحة التحكم', nav_patients: 'المرضى', nav_appointments: 'المواعيد', nav_wound_ai: 'ذكاء الجروح', nav_settings: 'الإعدادات',
+            stat_patients: 'إجمالي المرضى', stat_critical: 'حالات حرجة', stat_appointments: 'مواعيد اليوم', stat_recovery: 'نسبة التعافي',
+            recent_patients: 'أحدث المرضى', today_appointments: 'مواعيد اليوم', critical_alerts: 'تنبيهات حرجة', doctors_duty: 'الأطباء في الخدمة',
+            all_patients: 'جميع المرضى', add_patient: 'إضافة مريض', appointments: 'المواعيد', new_appointment: 'موعد جديد', wound_ai: 'نماذج ذكاء الجروح', settings: 'الإعدادات',
+            dark_mode: 'الوضع الداكن', language: 'اللغة', notifications: 'الإشعارات',
+            topbar_title_dash: 'صباح الخير، د. رامي 👋', topbar_sub_dash: 'الأربعاء، 30 أبريل 2025 · 8 مواعيد اليوم',
+            topbar_title_pat: 'المرضى', topbar_title_appt: 'المواعيد', topbar_title_ai: 'ذكاء الجروح', topbar_title_set: 'الإعدادات'
+        }
+    };
+
+    function changeLanguage(lang) {
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.lang = lang;
+
+        // Update all elements with data-lang attribute
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if (translations[lang][key]) el.textContent = translations[lang][key];
+        });
+
+        // Update topbar specifically based on active page
+        const activePage = document.querySelector('.page.active').id.replace('-page', '');
+        const titleKey = `topbar_title_${activePage === 'dashboard' ? 'dash' : activePage === 'patients' ? 'pat' : activePage === 'appointments' ? 'appt' : activePage === 'wound-ai' ? 'ai' : 'set'}`;
+        if(translations[lang][titleKey]) document.getElementById('pageTitle').textContent = translations[lang][titleKey];
+        
+        if(activePage === 'dashboard' && translations[lang]['topbar_sub_dash']) {
+            document.getElementById('pageSubtitle').textContent = translations[lang]['topbar_sub_dash'];
+        } else {
+            document.getElementById('pageSubtitle').textContent = lang === 'ar' ? 'تفضيلات النظام' : 'System preferences';
+        }
+    }
+
+    /* ====== Patient Logic ====== */
+    function getInitials(name) { return name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase(); }
+    function getRiskClass(risk) {
+        if (risk >= 80) return { bar:'rf-red', badge:'b-critical', label:'Critical' };
+        if (risk >= 60) return { bar:'rf-orange', badge:'b-high', label:'High' };
+        if (risk >= 40) return { bar:'rf-yellow', badge:'b-medium', label:'Medium' };
+        return { bar:'rf-green', badge:'b-stable', label:'Stable' };
+    }
+    function getFilterStatus(risk) { if (risk >= 80) return 'critical'; if (risk >= 60) return 'high'; if (risk >= 40) return 'medium'; return 'stable'; }
+
+    function renderPatients() {
+        const query  = (document.getElementById('patientSearch')?.value || '').toLowerCase().trim();
+        const tbody  = document.getElementById('patientsTableBody');
+        const recentTbody = document.getElementById('recentPatientsBody');
+        const noRes  = document.getElementById('noResults');
+        
+        let filtered = patients.filter(p => {
+            const matchSearch = !query || p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query) || p.condition.toLowerCase().includes(query);
+            const pStatus = getFilterStatus(p.risk);
+            const matchFilter = currentFilter === 'all' || currentFilter === pStatus || (currentFilter === 'stable' && pStatus === 'medium');
+            return matchSearch && matchFilter;
+        });
+
+        tbody.innerHTML = '';
+        if (filtered.length === 0) { noRes.style.display = 'block'; } else {
+            noRes.style.display = 'none';
+            filtered.forEach((p, i) => {
+                const rc = getRiskClass(p.risk); const av = avatarColors[patients.indexOf(p) % avatarColors.length]; const ini = getInitials(p.name);
+                tbody.innerHTML += `
+                <tr>
+                    <td><div class="p-cell"><div class="p-mini-avatar ${av}">${ini}</div><div class="p-name-cell"><strong>${p.name}</strong><span>${p.gender}</span></div></div></td>
+                    <td>${p.id}</td><td>${p.age}</td><td>${p.condition}</td>
+                    <td><div>${p.risk}%</div><div class="risk-bar"><div class="risk-fill ${rc.bar}" style="width:${p.risk}%"></div></div></td>
+                    <td><span class="badge ${rc.badge}">${rc.label}</span></td><td>${p.lastVisit}</td>
+                    <td><div class="action-btns">
+                        <button class="btn-sm" onclick='viewPatient("${p.id}")'><i class="fas fa-eye"></i> View</button>
+                        <button class="btn-sm" onclick='editPatient("${p.id}")'><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn-sm danger" onclick='deletePatient("${p.id}")'><i class="fas fa-trash"></i></button>
+                    </div></td>
+                </tr>`;
+            });
+        }
+
+        recentTbody.innerHTML = '';
+        patients.slice(0, 4).forEach((p, i) => {
+            const rc = getRiskClass(p.risk); const av = avatarColors[i % avatarColors.length]; const ini = getInitials(p.name);
+            recentTbody.innerHTML += `
+            <tr>
+                <td><div class="p-cell"><div class="p-mini-avatar ${av}">${ini}</div><div class="p-name-cell"><strong>${p.name}</strong><span>Age ${p.age}</span></div></div></td>
+                <td>${p.condition}</td>
+                <td><div>${p.risk}%</div><div class="risk-bar"><div class="risk-fill ${rc.bar}" style="width:${p.risk}%"></div></div></td>
+                <td><span class="badge ${rc.badge}">${rc.label}</span></td>
+                <td><button class="btn-sm" onclick='viewPatient("${p.id}")'>View</button></td>
+            </tr>`;
+        });
+
+        document.getElementById('statTotal').textContent = patients.length;
+        document.getElementById('statCritical').textContent = patients.filter(p => p.risk >= 80).length;
+        document.getElementById('patientCountLabel').textContent = `${patients.length} patients · ${patients.filter(p => p.risk >= 80).length} critical cases`;
+        document.getElementById('patientBadge').textContent = patients.length;
+    }
+
+    function setFilter(btn, filter) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentFilter = filter; renderPatients(); }
+    function deletePatient(id) { if(confirm('Are you sure?')) { patients = patients.filter(p => p.id !== id); renderPatients(); } }
+
+    function editPatient(id) {
+        const p = patients.find(p => p.id === id); if(!p) return;
+        document.getElementById('inp-editId').value = id; document.getElementById('inp-name').value = p.name;
+        document.getElementById('inp-age').value = p.age; document.getElementById('inp-gender').value = p.gender;
+        document.getElementById('inp-condition').value = p.condition; document.getElementById('inp-risk').value = p.risk;
+        document.getElementById('modalTitle').textContent = 'Edit Patient'; document.getElementById('addPatientModal').style.display = 'flex';
+    }
+
+    function openAddModal() {
+        document.getElementById('inp-editId').value = ''; document.getElementById('modalTitle').textContent = 'Add New Patient';
+        document.getElementById('addPatientModal').style.display = 'flex'; document.getElementById('modal-error').style.display = 'none';
+        ['inp-name','inp-age','inp-condition','inp-risk'].forEach(id => document.getElementById(id).value = '');
+    }
+    function closeAddModal() { document.getElementById('addPatientModal').style.display = 'none'; }
+
+    function submitPatient() {
+        const editId = document.getElementById('inp-editId').value; const name = document.getElementById('inp-name').value.trim();
+        const age = parseInt(document.getElementById('inp-age').value); const gender = document.getElementById('inp-gender').value;
+        const condition = document.getElementById('inp-condition').value.trim(); const risk = parseInt(document.getElementById('inp-risk').value);
+        const errEl = document.getElementById('modal-error');
+        if (!name) { errEl.textContent='Please enter name.'; errEl.style.display='block'; return; }
+        if (!age || age < 1) { errEl.textContent='Enter valid age.'; errEl.style.display='block'; return; }
+        if (!condition) { errEl.textContent='Enter condition.'; errEl.style.display='block'; return; }
+        if (isNaN(risk) || risk < 0 || risk > 100) { errEl.textContent='Risk must be 0-100.'; errEl.style.display='block'; return; }
+
+        if(editId) { const index = patients.findIndex(p => p.id === editId); if(index !== -1) patients[index] = { ...patients[index], name, age, gender, condition, risk }; }
+        else { const newId = 'P-' + (10240 + patients.length); const today = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }); patients.unshift({ id: newId, name, gender, age, condition, risk, lastVisit: today, images: [] }); }
+        closeAddModal(); renderPatients();
+        if (!document.getElementById('patients-page').classList.contains('active')) switchPage('patients');
+    }
+
+    function switchPage(name) {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const navEl = document.querySelector(`[data-page="${name}"]`); if (navEl) navEl.classList.add('active');
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(name + '-page').classList.add('active');
+        
+        const currentLang = document.documentElement.lang === 'ar' ? 'ar' : 'en';
+        const titleKey = `topbar_title_${name === 'dashboard' ? 'dash' : name === 'patients' ? 'pat' : name === 'appointments' ? 'appt' : name === 'wound-ai' ? 'ai' : 'set'}`;
+        document.getElementById('pageTitle').textContent = translations[currentLang][titleKey] || '';
+        
+        if(name === 'dashboard') document.getElementById('pageSubtitle').textContent = translations[currentLang]['topbar_sub_dash'] || '';
+        else document.getElementById('pageSubtitle').textContent = currentLang === 'ar' ? 'تفضيلات النظام' : 'System preferences';
+
+        if (name === 'patients') renderPatients();
+    }
+    document.querySelectorAll('.nav-item').forEach(item => { item.addEventListener('click', () => switchPage(item.getAttribute('data-page'))); });
+
+    /* View Patient */
+    let patientChartInstance = null;
+  function viewPatient(id) {
+    // 1. Find the specific patient object within the array using the passed ID
+    const p = patients.find(pt => pt.id === id); 
+    if (!p) return;
+
+    // 2. Extract basic design properties and colors based on risk level
+    const ini = getInitials(p.name); 
+    const barColor = p.risk >= 80 ? '#ff7b72' : p.risk >= 60 ? '#fb923c' : p.risk >= 40 ? '#facc15' : '#34d399';
+    const lvl = p.risk >= 80 ? 'b-critical' : p.risk >= 60 ? 'b-high' : p.risk >= 40 ? 'b-medium' : 'b-stable';
+    const lvlTxt = p.risk >= 80 ? 'Critical' : p.risk >= 60 ? 'High' : p.risk >= 40 ? 'Medium' : 'Stable';
+
+    // 3. Populate the view modal UI components directly
+    if (document.getElementById('vm-avatar')) document.getElementById('vm-avatar').textContent = ini; 
+    if (document.getElementById('vm-name')) document.getElementById('vm-name').textContent = p.name;
+    if (document.getElementById('vm-meta')) document.getElementById('vm-meta').textContent = `ID: ${p.id} · Age ${p.age} · ${p.gender}`; 
+    if (document.getElementById('vm-condition')) document.getElementById('vm-condition').textContent = p.condition;
+    if (document.getElementById('vm-risk')) {
+        document.getElementById('vm-risk').textContent = p.risk + '%'; 
+        document.getElementById('vm-risk').style.color = barColor;
+    }
+    if (document.getElementById('vm-badge')) {
+        document.getElementById('vm-badge').textContent = lvlTxt; 
+        document.getElementById('vm-badge').className = 'badge ' + lvl;
+    }
+    if (document.getElementById('vm-bar')) {
+        document.getElementById('vm-bar').style.width = p.risk + '%'; 
+        document.getElementById('vm-bar').style.background = `linear-gradient(90deg, ${barColor}, #a855f7)`;
+    }
+    if (document.getElementById('vm-visit')) document.getElementById('vm-visit').textContent = 'Last Visit: ' + p.lastVisit;
+
+    // 4. Render historical progress images onto the container template safely
+    const imgContainer = document.getElementById('vm-images'); 
+    if (imgContainer) {
+        imgContainer.innerHTML = '';
+        if (p.images && p.images.length > 0) { 
+            p.images.forEach(img => { 
+                imgContainer.innerHTML += `
+                    <div class="img-history-item">
+                        <img src="${img.url}" alt="Wound on ${img.date}">
+                        <div class="img-date">${img.date}</div>
+                    </div>`; 
+            }); 
+        } else { 
+            imgContainer.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:20px 0;">No images uploaded yet</div>`; 
+        } 
+    }
+
+    // 5. PIPELINE INTEGRATION: Sanitize the patient ID for backend compatibility
+    // Strips out any 'P-' prefix to get a clean numeric ID for database lookup
+    const cleanerId = String(p.id).replace('P-', '');
+
+    // Save the structured patient details inside localStorage for the next page to read
+    localStorage.setItem('selectedPatient', JSON.stringify({ 
+        id: cleanerId, 
+        name: p.name, 
+        age: p.age,
+        condition: p.condition 
+    }));
+
+    // 6. Redirect seamlessly to the live AI Segmentation and Assessment layout
+    // Since the dashboard and integration files are at the same workspace layer, we call it directly
+    window.location.href = "MedAura AI - Integrated Dashboard.html";
+}
+
+    // 5. Instantly compile the tracking chart inside the timeout loop
+    document.getElementById('patientModal').style.display = 'flex';
+    setTimeout(() => {
+        if (patientChartInstance) patientChartInstance.destroy();
+        const ctx = document.getElementById('patientChart').getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 150); 
+        grad.addColorStop(0, `${barColor}55`); 
+        grad.addColorStop(1, `${barColor}00`);
+        
+        patientChartInstance = new Chart(ctx, {
+            type: 'line', 
+            data: { 
+                labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], 
+                datasets: [{ 
+                    data: [p.risk-5, p.risk-2, p.risk-3, p.risk+1, p.risk-1, p.risk, p.risk], 
+                    borderColor: barColor, 
+                    borderWidth: 2.5, 
+                    fill: true, 
+                    backgroundColor: grad, 
+                    tension: 0.4, 
+                    pointRadius: 4, 
+                    pointBackgroundColor: '#f2edff', 
+                    pointBorderColor: barColor, 
+                    pointBorderWidth: 2 
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    y: { min:0, max:100, grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#9f93c8',font:{size:10}} }, 
+                    x: { grid:{display:false}, ticks:{color:'#9f93c8',font:{size:10}} } 
+                } 
+            }
+        });
+    }, 50);
+
+    // 6. PIPELINE INTEGRATION: Sanitize the structural patient code identifier
+    // Removes the string prefixes so the entity cleanly maps to integer data tables
+    const cleanerId = String(p.id).replace('P-', '');
+
+    localStorage.setItem('selectedPatient', JSON.stringify({ 
+        id: cleanerId, 
+        name: p.name, 
+        age: p.age,
+        condition: p.condition 
+    }));
+
+    // 7. Dynamic redirection directly into the complete AI Diagnostics layout
+    window.location.href = "MedAura AI - Integrated Dashboard.html";
+}
+    function closePatientModal() { document.getElementById('patientModal').style.display = 'none'; if (patientChartInstance) { patientChartInstance.destroy(); patientChartInstance = null; } }
+
+    /* Notifications & Settings */
+    function toggleNotifDropdown() { document.getElementById('notifDropdown').classList.toggle('show'); }
+    function clearNotifs() { document.getElementById('notifDot').style.display = 'none'; document.getElementById('notifDropdown').classList.remove('show'); }
+    window.onclick = function(event) { if (!event.target.closest('.notif-btn') && !event.target.closest('.notif-dropdown')) { document.getElementById('notifDropdown').classList.remove('show'); } }
+    function toggleDarkMode(input) { if(input.checked) { document.body.classList.remove('light-mode'); } else { document.body.classList.add('light-mode'); } }
+    function toggleNotifsSetting(input) { const dot = document.getElementById('notifDot'); if(input.checked) { dot.style.display = 'block'; } else { dot.style.display = 'none'; } }
+
+    renderPatients();
+</script>
+</body>
+</html>

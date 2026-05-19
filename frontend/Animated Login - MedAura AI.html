@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated Login - MedAura AI</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
+}
+
+body{
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+background:linear-gradient(135deg,#0b1220,#111827,#1e293b);
+}
+
+.container{
+position:relative;
+width:800px;
+height:650px; 
+background:#111827;
+border-radius:18px;
+overflow:hidden;
+box-shadow:0 15px 40px rgba(0,0,0,.45);
+border:1px solid rgba(255,255,255,.05);
+}
+
+.form{
+position:absolute;
+top:0;
+width:50%;
+height:100%;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+padding:30px;
+transition:.6s;
+color:#fff;
+}
+
+.login{ left:0; z-index:2; }
+.register{ left:0; opacity:0; z-index:1; }
+
+input, select {
+width:100%;
+padding:12px 12px 12px 40px; 
+margin:6px 0;
+border:none;
+outline:none;
+background:#1f2937;
+color:#fff;
+border-radius:8px;
+font-size: 14px;
+appearance: none;
+-webkit-appearance: none;
+-moz-appearance: none;
+}
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input-wrapper i.field-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6366f1;
+    font-size: 14px;
+    z-index: 10;
+}
+
+.single-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6366f1;
+    font-size: 10px;
+    pointer-events: none;
+}
+
+.toggle-eye {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 14px;
+    z-index: 10;
+    transition: 0.3s;
+}
+
+.toggle-eye:hover {
+    color: #6366f1;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance:textfield;}
+
+button{
+padding:12px 35px;
+border:none;
+border-radius:25px;
+background:#2563eb;
+color:#fff;
+cursor:pointer;
+margin-top:10px;
+font-weight:bold;
+width: 100%;
+}
+
+.panel{
+position:absolute;
+right:0;
+top:0;
+width:50%;
+height:100%;
+background:linear-gradient(135deg,#1d4ed8,#0f172a,#06b6d4);
+color:#fff;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+transition:.6s;
+z-index:5;
+padding:40px;
+text-align:center;
+}
+
+.panel button{ background:transparent; border:2px solid #fff; width: auto; }
+
+.container.active .panel{ transform:translateX(-100%); }
+.container.active .login{ transform:translateX(100%); opacity:0; }
+.container.active .register{ transform:translateX(100%); opacity:1; z-index:3; }
+
+/* Role toggle tabs */
+.role-tabs {
+    display: flex;
+    width: 100%;
+    background: #1f2937;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    overflow: hidden;
+}
+
+.role-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 0;
+    margin: 0;
+    width: auto;
+    transition: 0.3s;
+}
+
+.role-tab.active {
+    background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+    color: #fff;
+    border-radius: 8px;
+}
+
+/* Login role panels */
+#loginPatientFields,
+#loginDoctorFields {
+    width: 100%;
+    display: none;
+}
+
+#doctorFields {
+    width: 100%;
+    display: none;
+}
+
+select option { background: #111827; }
+h1{ margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<div class="container" id="box">
+
+    <div class="form login">
+        <h1>Sign In</h1>
+
+        <div class="role-tabs">
+            <button class="role-tab active" id="tabPatient" onclick="switchLoginRole('patient')">
+                <i class="fas fa-user"></i> Patient
+            </button>
+            <button class="role-tab" id="tabDoctor" onclick="switchLoginRole('doctor')">
+                <i class="fas fa-user-md"></i> Doctor
+            </button>
+        </div>
+
+        <div id="loginPatientFields" style="display:block; width:100%;">
+            <div class="input-wrapper">
+                <i class="fas fa-id-badge field-icon"></i>
+                <input type="text" id="loginPatientId" placeholder="Patient Code">
+            </div>
+            <div class="input-wrapper">
+                <i class="fas fa-lock field-icon"></i>
+                <input type="password" id="loginPatientPass" placeholder="Password">
+                <i class="fas fa-eye-slash toggle-eye" onclick="togglePass('loginPatientPass', this)"></i>
+            </div>
+        </div>
+
+        <div id="loginDoctorFields" style="display:none; width:100%;">
+            <div class="input-wrapper">
+                <i class="fas fa-user field-icon"></i>
+                <input type="text" id="loginDoctorUsername" placeholder="Email / Username">
+            </div>
+            <div class="input-wrapper">
+                <i class="fas fa-lock field-icon"></i>
+                <input type="password" id="loginDoctorPass" placeholder="Password">
+                <i class="fas fa-eye-slash toggle-eye" onclick="togglePass('loginDoctorPass', this)"></i>
+            </div>
+        </div>
+
+        <button onclick="handleLogin()">Login</button>
+    </div>
+
+    <div class="form register">
+        <h1>Create Account</h1>
+        <div class="input-wrapper">
+            <i class="fas fa-user field-icon"></i>
+            <input type="text" id="regDoctorName" placeholder="Full Name">
+        </div>
+        <div class="input-wrapper">
+            <i class="fas fa-envelope field-icon"></i>
+            <input type="email" id="regDoctorEmail" placeholder="Email">
+        </div>
+
+        <div id="doctorFields" style="display:block; width:100%;">
+            <div class="input-wrapper"><i class="fas fa-phone field-icon"></i><input type="tel" id="regDoctorPhone" placeholder="Phone Number"></div>
+            <div class="input-wrapper"><i class="fas fa-stethoscope field-icon"></i><input type="text" id="regDoctorSpecialty" placeholder="Specialization (e.g. Surgeon)"></div>
+            <div class="input-wrapper"><i class="fas fa-hospital field-icon"></i><input type="text" id="regDoctorHospital" placeholder="Hospital / Clinic Name"></div>
+            <div class="input-wrapper"><i class="fas fa-id-card field-icon"></i><input type="text" id="regDoctorLicense" placeholder="Medical License Number"></div>
+            <div class="input-wrapper">
+                <i class="fas fa-lock field-icon"></i>
+                <input type="password" id="regDoctorPass" placeholder="Password">
+                <i class="fas fa-eye-slash toggle-eye" onclick="togglePass('regDoctorPass', this)"></i>
+            </div>
+            <div class="input-wrapper">
+                <i class="fas fa-lock field-icon"></i>
+                <input type="password" id="regDoctorPassConfirm" placeholder="Confirm Password">
+                <i class="fas fa-eye-slash toggle-eye" onclick="togglePass('regDoctorPassConfirm', this)"></i>
+            </div>
+            <button onclick="handleRegister()">Register as Doctor</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h1 id="title">Welcome to MedAura AI</h1>
+        <p id="text">Secure access to your professional dashboard</p>
+        <button onclick="toggleForm()" id="switchBtn">Create Account</button>
+    </div>
+
+</div>
+<script>
+let active = false;
+let loginRole = 'patient';
+
+function switchLoginRole(role) {
+    loginRole = role;
+    document.getElementById('loginPatientFields').style.display = role === 'patient' ? 'block' : 'none';
+    document.getElementById('loginDoctorFields').style.display  = role === 'doctor'  ? 'block' : 'none';
+    document.getElementById('tabPatient').classList.toggle('active', role === 'patient');
+    document.getElementById('tabDoctor').classList.toggle('active',  role === 'doctor');
+}
+
+function toggleForm(){
+    const box = document.getElementById("box");
+    box.classList.toggle("active");
+    active = !active;
+    
+    const title = document.getElementById("title");
+    const text  = document.getElementById("text");
+    const btn   = document.getElementById("switchBtn");
+
+    if(active){
+        title.innerText = "Doctor Registration";
+        text.innerText  = "Create your secure doctor account to continue.";
+        btn.innerText   = "Sign In";
+    } else {
+        title.innerText = "Welcome to MedAura AI";
+        text.innerText  = "Secure access to your professional dashboard";
+        btn.innerText   = "Create Account";
+    }
+}
+
+function togglePass(id, icon) {
+    const input = document.getElementById(id);
+    if (input.type === "password") {
+        input.type = "text";
+        icon.className = "fas fa-eye toggle-eye";
+    } else {
+        input.type = "password";
+        icon.className = "fas fa-eye-slash toggle-eye";
+    }
+}
+
+const API_BASE = "http://127.0.0.1:8000";
+
+async function handleLogin() {
+    try {
+        if (loginRole === 'patient') {
+            const code = document.getElementById('loginPatientId').value.trim();
+            const pass = document.getElementById('loginPatientPass').value;
+            if (!code || !pass) { alert("Please enter your patient code and password."); return; }
+
+            const res = await fetch(`${API_BASE}/auth/login/patient`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ patient_code: parseInt(code, 10), password: pass })
+            });
+            const data = await res.json();
+            if (!res.ok) { alert(data.detail || "Login failed"); return; }
+
+            localStorage.setItem("token", data.access_token);
+            localStorage.setItem("role", "patient");
+            window.location.href = "MedAura AI - Integrated Dashboard.html";
+        } else {
+            const email = document.getElementById('loginDoctorUsername').value.trim();
+            const pass = document.getElementById('loginDoctorPass').value;
+            if (!email || !pass) { alert("Please enter your email and password."); return; }
+
+            const res = await fetch(`${API_BASE}/auth/login/doctor`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, password: pass })
+            });
+            const data = await res.json();
+            if (!res.ok) { alert(data.detail || "Login failed"); return; }
+
+            localStorage.setItem("token", data.access_token);
+            localStorage.setItem("role", "doctor");
+            window.location.href = "Doctor_Dashboard1.html";
+        }
+    } catch (err) {
+        alert("Could not reach the backend. Is the server running on " + API_BASE + "?");
+    }
+}
+
+async function handleRegister() {
+    try {
+        const name = document.getElementById('regDoctorName').value.trim();
+        const email = document.getElementById('regDoctorEmail').value.trim();
+        const phone = document.getElementById('regDoctorPhone').value.trim();
+        const specialty = document.getElementById('regDoctorSpecialty').value.trim();
+        const hospital = document.getElementById('regDoctorHospital').value.trim();
+        const license_number = document.getElementById('regDoctorLicense').value.trim();
+        const pass = document.getElementById('regDoctorPass').value;
+        const passConfirm = document.getElementById('regDoctorPassConfirm').value;
+
+        if (!name || !email || !specialty || !pass) {
+            alert("Please fill in name, email, specialty, and password.");
+            return;
+        }
+        if (pass !== passConfirm) { alert("Passwords do not match."); return; }
+
+        const res = await fetch(`${API_BASE}/auth/register/doctor`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name, email, password: pass, specialty,
+                phone: phone || null,
+                hospital: hospital || null,
+                license_number: license_number || null
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.detail || "Registration failed"); return; }
+
+        alert("Doctor registered successfully. Please sign in.");
+        toggleForm();
+    } catch (err) {
+        alert("Could not reach the backend. Is the server running on " + API_BASE + "?");
+    }
+}
+</script>
+
+</body>
+</html>
